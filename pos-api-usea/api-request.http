@@ -1,0 +1,45 @@
+### composer install
+### php artisan migrate:fresh
+### php artisan key:generate
+### php artisan serve
+
+### Categories
+## GET
+GET http://localhost:8000/api/categories
+Accept: application/json
+
+### POST
+POST http://localhost:8000/api/categories
+Accept: application/json
+Content-Type: application/json
+
+
+{
+  "name": "Apple2",
+  "slug": "apple2",
+  "desc": "This is Apple Model2"
+}
+
+### GET BY ID
+GET http://localhost:8000/api/categories/2
+Accept: application/json
+Content-Type: application/json
+
+
+### POST
+PUT http://localhost:8000/api/categories/1
+Accept: application/json
+Content-Type: application/json
+
+
+{
+  "name": "Apple1",
+  "slug": "apple1",
+  "desc": "This is Apple Model1",
+  "status": "inactive"
+}
+
+### DELETE
+DELETE http://localhost:8000/api/categories/1
+Accept: application/json
+Content-Type: application/json
