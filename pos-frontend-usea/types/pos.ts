@@ -3,14 +3,12 @@ export interface Product {
   name: string;
   description?: string;
   price: number;
-  cost: number;
   sku: string;
   barcode: string;
   category: string;
   stock: number;
   minStock: number;
   image?: string;
-  isActive: boolean;
   taxRate: number;
   createdAt: Date;
   updatedAt: Date;
@@ -59,11 +57,4 @@ export interface Transaction {
   status: 'pending' | 'completed' | 'cancelled' | 'refunded';
   createdAt: Date;
   notes?: string;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  color: string;
-  productCount: number;
 }

@@ -2,7 +2,7 @@
 ### php artisan migrate:fresh
 ### php artisan key:generate
 ### php artisan serve
-
+### php artisan storage:link
 ### Categories
 ## GET
 GET http://localhost:8000/api/categories
@@ -43,3 +43,14 @@ Content-Type: application/json
 DELETE http://localhost:8000/api/categories/1
 Accept: application/json
 Content-Type: application/json
+
+
+###
+POST http://localhost:8000/api/stores
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Apple Store",
+  "location": "New York"
+}

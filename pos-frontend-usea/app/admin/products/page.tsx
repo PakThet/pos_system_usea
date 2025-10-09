@@ -18,31 +18,14 @@ import { Badge } from "@/components/ui/badge";
 import { FilePenIcon, FilterIcon, Loader2Icon, PlusIcon, SearchIcon, TrashIcon, XIcon, UploadIcon } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Product } from "@/types/product";
 
-type Product = {
-  id: number;
-  image: string;
-  store: string;
-  warehouse: string;
-  p_name: string;
-  slug: string;
-  sku: string;
-  cate: string;
-  barcode: string;
-  desc: string;
-  quantity: number;
-  price: number;
-  tax: number;
-  discount_value?: number;
-  quantity_alert: number;
-};
 
 const mockProducts: Product[] = [
   {
     id: 1,
     image: "/cate.jpg",
     store: "Main Store",
-    warehouse: "Central Warehouse",
     p_name: "Wireless Mouse",
     slug: "wireless-mouse",
     sku: "WM-12345",
@@ -59,7 +42,6 @@ const mockProducts: Product[] = [
     id: 2,
     image: "/cate.jpg",
     store: "Main Store",
-    warehouse: "Central Warehouse",
     p_name: "Bluetooth Headphones",
     slug: "bluetooth-headphones",
     sku: "BH-67890",
@@ -76,7 +58,6 @@ const mockProducts: Product[] = [
     id: 3,
     image: "/cate.jpg",
     store: "Outlet Store",
-    warehouse: "Branch Warehouse",
     p_name: "Coffee Mug",
     slug: "coffee-mug",
     sku: "CM-24680",
@@ -92,7 +73,6 @@ const mockProducts: Product[] = [
     id: 4,
     image: "/cate.jpg",
     store: "Main Store",
-    warehouse: "Central Warehouse",
     p_name: "Notebook",
     slug: "notebook",
     sku: "NB-13579",
@@ -109,7 +89,6 @@ const mockProducts: Product[] = [
     id: 5,
     image: "/cate.jpg",
     store: "Main Store",
-    warehouse: "Central Warehouse",
     p_name: "Desk Lamp",
     slug: "desk-lamp",
     sku: "DL-cate223",
@@ -146,7 +125,6 @@ const Page = () => {
   const [newProduct, setNewProduct] = useState({
     image: "",
     store: "",
-    warehouse: "",
     p_name: "",
     slug: "",
     sku: "",
@@ -166,7 +144,6 @@ const Page = () => {
     setNewProduct({
       image: "",
       store: "",
-      warehouse: "",
       p_name: "",
       slug: "",
       sku: "",
@@ -254,7 +231,6 @@ const Page = () => {
         id: Math.max(...products.map(p => p.id)) + 1,
         image: newProduct.image || "/placeholder.jpg",
         store: newProduct.store || "Main Store",
-        warehouse: newProduct.warehouse || "Central Warehouse",
         p_name: newProduct.p_name,
         slug: newProduct.slug || newProduct.p_name.toLowerCase().replace(/\s+/g, '-'),
         sku: newProduct.sku || `SKU-${Date.now()}`,
@@ -479,7 +455,7 @@ const Page = () => {
                         <TableCell>
                           <div className="text-sm">
                             <div>{product.store}</div>
-                            <div className="text-muted-foreground">{product.warehouse}</div>
+                            <div className="text-muted-foreground">Central Warehouse</div>
                           </div>
                         </TableCell>
                         <TableCell className="font-semibold">
@@ -819,7 +795,7 @@ const Page = () => {
                 </Select>
               </div>
 
-              <div className="grid gap-2">
+              {/* <div className="grid gap-2">
                 <Label htmlFor="warehouse">Warehouse</Label>
                 <Select
                   value={isAddProductDialogOpen ? newProduct.warehouse : selectedProduct?.warehouse || ""}
@@ -839,7 +815,7 @@ const Page = () => {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
             </div>
 
             <div className="grid gap-2">

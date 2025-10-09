@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Product, CartItem, Customer, PaymentMethod, Category } from "@/types/pos";
+import { Product, CartItem, Customer, PaymentMethod } from "@/types/pos";
 import { ProductGrid } from "@/components/pos/product-grid";
 import { CartSummary } from "@/components/pos/cart-summary";
 import { PaymentMethods } from "@/components/pos/payment-methods";
@@ -17,14 +17,12 @@ const mockProducts: Product[] = [
     name: "Wireless Headphones",
     description: "Noise-cancelling wireless headphones",
     price: 199.99,
-    cost: 120.00,
     sku: "WH-001",
     barcode: "123456789012",
     category: "Electronics",
     stock: 25,
     minStock: 5,
     taxRate: 0.08,
-    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -33,14 +31,12 @@ const mockProducts: Product[] = [
     name: "Smartphone Case",
     description: "Protective case for smartphones",
     price: 29.99,
-    cost: 8.00,
     sku: "SC-001",
     barcode: "123456789013",
     category: "Accessories",
     stock: 100,
     minStock: 10,
     taxRate: 0.08,
-    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -49,14 +45,12 @@ const mockProducts: Product[] = [
     name: "USB-C Cable",
     description: "High-speed charging cable",
     price: 19.99,
-    cost: 5.00,
     sku: "UC-001",
     barcode: "123456789014",
     category: "Accessories",
     stock: 50,
     minStock: 15,
     taxRate: 0.08,
-    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -65,14 +59,12 @@ const mockProducts: Product[] = [
     name: "Laptop Backpack",
     description: "Water-resistant laptop backpack",
     price: 89.99,
-    cost: 45.00,
     sku: "LB-001",
     barcode: "123456789015",
     category: "Bags",
     stock: 30,
     minStock: 5,
     taxRate: 0.08,
-    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -81,14 +73,12 @@ const mockProducts: Product[] = [
     name: "Wireless Mouse",
     description: "Ergonomic wireless mouse",
     price: 39.99,
-    cost: 15.00,
     sku: "WM-001",
     barcode: "123456789016",
     category: "Electronics",
     stock: 75,
     minStock: 10,
     taxRate: 0.08,
-    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -97,14 +87,12 @@ const mockProducts: Product[] = [
     name: "Screen Cleaner Kit",
     description: "Complete screen cleaning kit",
     price: 14.99,
-    cost: 4.00,
     sku: "SCK-001",
     barcode: "123456789017",
     category: "Accessories",
     stock: 200,
     minStock: 25,
     taxRate: 0.08,
-    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   }

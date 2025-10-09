@@ -33,7 +33,7 @@ class CategoryController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'failed to fetch data',
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -61,7 +61,7 @@ class CategoryController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'failed to store data',
+                'message' => $e->getMessage(),
             ],);
         }
     }
@@ -80,7 +80,7 @@ class CategoryController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'failed to show data',
+                'message' => $e->getMessage(),
             ],);
         }
     }
@@ -110,7 +110,7 @@ class CategoryController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'failed to update data',
+                'message' => $e->getMessage(),
             ],);
         }
     }
@@ -129,7 +129,7 @@ class CategoryController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'failed to delete data',
+                'message' => $e->getMessage(),
             ],);
         }
     }
