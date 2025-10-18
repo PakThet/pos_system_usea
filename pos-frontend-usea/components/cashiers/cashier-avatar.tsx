@@ -1,11 +1,10 @@
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Cashier } from "@/types/cashier";
 
 interface CashierAvatarProps {
-  cashier: {
-    firstName: string;
-    lastName: string;
-    avatar?: string;
-  };
+  cashier: Cashier;
   className?: string;
 }
 
@@ -16,9 +15,9 @@ export function CashierAvatar({ cashier, className }: CashierAvatarProps) {
 
   return (
     <Avatar className={className}>
-      <AvatarImage src={cashier.avatar} alt={`${cashier.firstName} ${cashier.lastName}`} />
+      {cashier.avatar && <AvatarImage src={cashier.avatar} alt={`${cashier.first_name} ${cashier.last_name}`} />}
       <AvatarFallback className="bg-primary text-primary-foreground">
-        {getInitials(cashier.firstName, cashier.lastName)}
+        {getInitials(cashier.first_name, cashier.last_name)}
       </AvatarFallback>
     </Avatar>
   );

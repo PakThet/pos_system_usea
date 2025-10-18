@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Plus, Filter } from "lucide-react";
 import { Order, OrderStats } from "@/types/order";
-import { OrdersStats } from "@/components/orders-stats";
-import { OrdersTable } from "@/components/orders-table";
-import { OrderDetailsDialog } from "@/components/order-details-dialog";
+import { OrdersStats } from "@/components/orders/orders-stats";
+import { OrdersTable } from "@/components/orders/orders-table";
+import { OrderDetailsDialog } from "@/components/orders/order-details-dialog";
 
 // Mock data - replace with actual API calls
 const mockOrders: Order[] = [

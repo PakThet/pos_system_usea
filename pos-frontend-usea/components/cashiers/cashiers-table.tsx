@@ -46,22 +46,33 @@ interface CashiersTableProps {
   cashiers: Cashier[];
   onView: (cashier: Cashier) => void;
   onEdit: (cashier: Cashier) => void;
-  onStatusChange: (cashierId: string, status: Cashier['status']) => void;
+  onDelete: (cashierId: string) => Promise<void>;
+  onStatusChange: (cashierId: string, status: Cashier['status']) => Promise<void>;
+  onRecordLogin: (cashierId: string) => Promise<void>;
+  isLoading?: boolean;
 }
 
-export function CashiersTable({ cashiers, onView, onEdit, onStatusChange }: CashiersTableProps) {
+export function CashiersTable({
+  cashiers,
+  onView,
+  onEdit,
+  onDelete,
+  onStatusChange,
+  onRecordLogin,
+  isLoading = false,
+}: CashiersTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [shiftFilter, setShiftFilter] = useState<string>("all");
 
   const filteredCashiers = cashiers.filter((cashier) => {
-    const matchesSearch = 
-      cashier.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cashier.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch =
+      cashier.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cashier.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cashier.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cashier.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      cashier.employee_id.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesStatus = statusFilter === "all" || cashier.status === statusFilter;
     const matchesRole = roleFilter === "all" || cashier.role === roleFilter;
     const matchesShift = shiftFilter === "all" || cashier.shift === shiftFilter;
@@ -69,24 +80,11 @@ export function CashiersTable({ cashiers, onView, onEdit, onStatusChange }: Cash
     return matchesSearch && matchesStatus && matchesRole && matchesShift;
   });
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  };
-
-  const handleStatusToggle = (cashier: Cashier, checked: boolean) => {
-    onStatusChange(cashier.id, checked ? 'active' : 'inactive');
+  const handleStatusToggle = async (cashier: Cashier, checked: boolean) => {
+    await onStatusChange(cashier.id, checked ? "active" : "inactive");
   };
 
   return (
@@ -165,17 +163,15 @@ export function CashiersTable({ cashiers, onView, onEdit, onStatusChange }: Cash
                     <CashierAvatar cashier={cashier} />
                     <div>
                       <div className="font-semibold">
-                        {cashier.firstName} {cashier.lastName}
+                        {cashier.first_name} {cashier.last_name}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        ${cashier.hourlyRate}/hr
+                        ${cashier.hourly_rate}/hr
                       </div>
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="font-mono text-sm">
-                  {cashier.employeeId}
-                </TableCell>
+                <TableCell className="font-mono text-sm">{cashier.employee_id}</TableCell>
                 <TableCell>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -198,14 +194,14 @@ export function CashiersTable({ cashiers, onView, onEdit, onStatusChange }: Cash
                   <CashierShiftBadge shift={cashier.shift} size="sm" />
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="font-semibold">{formatCurrency(cashier.totalSales)}</div>
+                  <div className="font-semibold">{formatCurrency(cashier.total_sales)}</div>
                   <div className="text-xs text-muted-foreground">
-                    {cashier.totalTransactions} transactions
+                    {cashier.total_transactions} transactions
                   </div>
                 </TableCell>
                 <TableCell>
                   <Switch
-                    checked={cashier.status === 'active'}
+                    checked={cashier.status === "active"}
                     onCheckedChange={(checked) => handleStatusToggle(cashier, checked)}
                   />
                 </TableCell>
@@ -226,14 +222,14 @@ export function CashiersTable({ cashiers, onView, onEdit, onStatusChange }: Cash
                         <Edit className="h-4 w-4 mr-2" />
                         Edit Cashier
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onRecordLogin(cashier.id)}>
                         <Clock className="h-4 w-4 mr-2" />
-                        View Schedule
+                        Record Login
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => onDelete(cashier.id)}>
                         <DollarSign className="h-4 w-4 mr-2" />
-                        Sales Report
+                        Delete Cashier
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -245,9 +241,7 @@ export function CashiersTable({ cashiers, onView, onEdit, onStatusChange }: Cash
 
         {filteredCashiers.length === 0 && (
           <div className="text-center py-12">
-            <div className="text-muted-foreground">
-              No cashiers found matching your criteria.
-            </div>
+            <div className="text-muted-foreground">No cashiers found matching your criteria.</div>
           </div>
         )}
       </div>

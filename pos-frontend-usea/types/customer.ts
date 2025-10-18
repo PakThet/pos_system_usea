@@ -1,24 +1,43 @@
+export interface CustomerAddress {
+  street: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  country: string;
+}
+
 export interface Customer {
   id: string;
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone?: string;
-  avatar?: string;
-  status: 'active' | 'inactive';
-  tier: 'standard' | 'premium' | 'vip';
-  totalOrders: number;
-  totalSpent: number;
-  lastOrder?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  avatar?: string | null;
+  status: "active" | "inactive";
+  tier: "standard" | "premium" | "vip";
+  total_orders: number;
+  total_spent: number;
+  last_order?: string;
+  notes?: string | null;
+  address?: CustomerAddress;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCustomerData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  status?: "active" | "inactive";
+  tier?: "standard" | "premium" | "vip";
   notes?: string;
   address?: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    zip_code?: string;
+    country?: string;
   };
 }
 
@@ -26,26 +45,13 @@ export interface CustomerStats {
   total: number;
   active: number;
   inactive: number;
-  newThisMonth: number;
+  new_this_month: number;
   premium: number;
   vip: number;
-  averageOrderValue: number;
-}
-
-export interface CreateCustomerData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  tier: 'standard' | 'premium' | 'vip';
-  address?: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
+  average_order_value: number;
+  tierDistribution: {
+    standard: number;
+    premium: number;
+    vip: number;
   };
 }
-
-export type CustomerTier = Customer['tier'];
-export type CustomerStatus = Customer['status'];

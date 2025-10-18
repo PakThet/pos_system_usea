@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Search } from "lucide-react";
 import { Category, CreateCategoryData, UpdateCategoryData } from "@/types/category";
-import { CategoriesGrid } from "@/components/categories-grid";
-import { CategoryForm } from "@/components/category-form";
+import { CategoriesGrid } from "@/components/categories/categories-grid";
+import { CategoryForm } from "@/components/categories/category-form";
+import { categoryApi } from "@/services/categoryApi";
 
 const USE_API = process.env.NEXT_PUBLIC_USE_API === "true";
-const api = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 const mockCategories: Category[] = [
   {
     id: "1",
@@ -41,13 +42,23 @@ const mockCategories: Category[] = [
   },
 ];
 
+// Transform API category to app category
+const transformApiCategory = (apiCategory: any): Category => ({
+  id: apiCategory.id.toString(),
+  name: apiCategory.name,
+  slug: apiCategory.slug,
+  desc: apiCategory.desc || "",
+  status: apiCategory.status,
+  createdAt: new Date(apiCategory.created_at),
+  updatedAt: new Date(apiCategory.updated_at),
+});
+
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-const [refreshFlag, setRefreshFlag] = useState(0);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -59,18 +70,36 @@ const [refreshFlag, setRefreshFlag] = useState(0);
         setCategories(filtered);
       } else {
         try {
-          const res = await fetch(`${api}/categories${searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : ''}`);
-          const data = await res.json();
-          setCategories(data.data);
+          setIsLoading(true);
+          const response = await categoryApi.getCategories();
+          
+          if (response.success && Array.isArray(response.data)) {
+            const transformedCategories = response.data.map(transformApiCategory);
+            
+            // Filter by search term if provided
+            const filtered = searchTerm 
+              ? transformedCategories.filter((category) =>
+                  category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  category.desc?.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+              : transformedCategories;
+            
+            setCategories(filtered);
+          } else {
+            console.error("Invalid API response structure", response);
+            setCategories([]);
+          }
         } catch (err) {
           console.error("Failed to fetch categories", err);
+          setCategories([]);
+        } finally {
+          setIsLoading(false);
         }
       }
     };
 
     fetchCategories();
-  }, [searchTerm, refreshFlag]);
-
+  }, [searchTerm]);
 
   const handleCreateCategory = async (data: CreateCategoryData) => {
     setIsLoading(true);
@@ -85,28 +114,31 @@ const [refreshFlag, setRefreshFlag] = useState(0);
       };
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setCategories((prev) => [...prev, newCategory]);
+      setShowForm(false);
     } else {
       try {
-        const res = await fetch(`${api}/categories`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+        const response = await categoryApi.createCategory({
+          name: data.name,
+          slug: data.slug,
+          desc: data.desc
         });
-        const newCategory = await res.json();
         
-        setCategories((prev) => [...prev, newCategory]);
-
-        setRefreshFlag(prev => prev + 1);
-
+        if (response.success) {
+          const newCategory = transformApiCategory(response.data);
+          setCategories((prev) => [...prev, newCategory]);
+          setShowForm(false);
+        } else {
+          console.error("Failed to create category", response.message);
+          alert(`Failed to create category: ${response.message}`);
+        }
       } catch (err) {
         console.error("Failed to create category", err);
+        alert("Failed to create category. Please try again.");
       }
     }
 
-    setShowForm(false);
     setIsLoading(false);
   };
-
 
   const handleUpdateCategory = async (data: UpdateCategoryData) => {
     if (!editingCategory) return;
@@ -121,27 +153,34 @@ const [refreshFlag, setRefreshFlag] = useState(0);
             : cat
         )
       );
+      setEditingCategory(null);
     } else {
       try {
-        const res = await fetch(`${api}/categories/${editingCategory.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+        const response = await categoryApi.updateCategory(editingCategory.id, {
+          name: data.name,
+          slug: data.slug,
+          desc: data.desc,
+          status: data.status,
         });
-        const updated = await res.json();
-        setCategories((prev) =>
-          prev.map((cat) => (cat.id === updated.id ? updated : cat))
-        );
-        setRefreshFlag(prev => prev + 1);
+        
+        if (response.success) {
+          const updatedCategory = transformApiCategory(response.data);
+          setCategories((prev) =>
+            prev.map((cat) => (cat.id === updatedCategory.id ? updatedCategory : cat))
+          );
+          setEditingCategory(null);
+        } else {
+          console.error("Failed to update category", response.message);
+          alert(`Failed to update category: ${response.message}`);
+        }
       } catch (err) {
         console.error("Failed to update category", err);
+        alert("Failed to update category. Please try again.");
       }
     }
 
-    setEditingCategory(null);
     setIsLoading(false);
   };
-
 
   const handleDeleteCategory = async (category: Category) => {
     if (!confirm(`Are you sure you want to delete "${category.name}"?`)) return;
@@ -151,16 +190,20 @@ const [refreshFlag, setRefreshFlag] = useState(0);
       setCategories((prev) => prev.filter((cat) => cat.id !== category.id));
     } else {
       try {
-        await fetch(`${api}/categories/${category.id}`, {
-          method: "DELETE",
-        });
-        setCategories((prev) => prev.filter((cat) => cat.id !== category.id));
+        const response = await categoryApi.deleteCategory(category.id);
+        
+        if (response.success) {
+          setCategories((prev) => prev.filter((cat) => cat.id !== category.id));
+        } else {
+          console.error("Failed to delete category", response.message);
+          alert(`Failed to delete category: ${response.message}`);
+        }
       } catch (err) {
         console.error("Failed to delete category", err);
+        alert("Failed to delete category. Please try again.");
       }
     }
   };
-
 
   const handleEdit = (category: Category) => {
     setEditingCategory(category);
@@ -196,6 +239,13 @@ const [refreshFlag, setRefreshFlag] = useState(0);
           className="pl-10"
         />
       </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      )}
 
       {/* Form Card */}
       {(showForm || editingCategory) && (

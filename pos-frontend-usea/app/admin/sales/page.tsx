@@ -15,7 +15,7 @@ import {
   TopProduct, 
   PaymentMethodStats,
   SalesFilter 
-} from "@/types/sales";
+} from "@/types/sale";
 import { Button } from "@/components/ui/button";
 import { Download, RefreshCw } from "lucide-react";
 

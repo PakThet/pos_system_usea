@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -12,7 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Customer, CreateCustomerData } from "@/types/customer";
+import {
+  Customer,
+  CreateCustomerData,
+  CustomerAddress,
+} from "@/types/customer";
 
 interface CustomerFormProps {
   customer?: Customer;
@@ -27,37 +30,55 @@ export function CustomerForm({
   onCancel,
   isLoading = false,
 }: CustomerFormProps) {
+  // Ensure we handle customers that may not have an address
+  const firstAddress: CustomerAddress =
+    (Array.isArray(customer?.address)
+      ? customer?.address[0]
+      : (customer as any)?.address?.[0]) || {
+      street: "",
+      city: "",
+      state: "",
+      zip_code: "",
+      country: "",
+    };
+
   const [formData, setFormData] = useState({
-    firstName: customer?.firstName || "",
-    lastName: customer?.lastName || "",
-    email: customer?.email || "",
-    phone: customer?.phone || "",
-    tier: customer?.tier || "standard",
-    street: customer?.address?.street || "",
-    city: customer?.address?.city || "",
-    state: customer?.address?.state || "",
-    zipCode: customer?.address?.zipCode || "",
-    country: customer?.address?.country || "",
+    firstName: customer?.first_name ?? "",
+    lastName: customer?.last_name ?? "",
+    email: customer?.email ?? "",
+    phone: customer?.phone ?? "",
+    tier: customer?.tier ?? "standard",
+    street: firstAddress.street ?? "",
+    city: firstAddress.city ?? "",
+    state: firstAddress.state ?? "",
+    zipCode: firstAddress.zip_code ?? "",
+    country: firstAddress.country ?? "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const customerData: CreateCustomerData = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
+      first_name: formData.firstName,
+      last_name: formData.lastName,
       email: formData.email,
       phone: formData.phone || undefined,
-      tier: formData.tier as 'standard' | 'premium' | 'vip',
+      tier: formData.tier as "standard" | "premium" | "vip",
     };
 
-    // Only include address if at least one field is filled
-    if (formData.street || formData.city || formData.state || formData.zipCode || formData.country) {
+    // Include address only if at least one field is filled
+    if (
+      formData.street ||
+      formData.city ||
+      formData.state ||
+      formData.zipCode ||
+      formData.country
+    ) {
       customerData.address = {
         street: formData.street,
         city: formData.city,
         state: formData.state,
-        zipCode: formData.zipCode,
+        zip_code: formData.zipCode,
         country: formData.country,
       };
     }
@@ -66,14 +87,20 @@ export function CustomerForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-8 bg-background p-6 rounded-2xl border"
+    >
+      {/* Personal Info Section */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
           <Input
             id="firstName"
             value={formData.firstName}
-            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, firstName: e.target.value })
+            }
             placeholder="Enter first name"
             required
           />
@@ -84,7 +111,9 @@ export function CustomerForm({
           <Input
             id="lastName"
             value={formData.lastName}
-            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, lastName: e.target.value })
+            }
             placeholder="Enter last name"
             required
           />
@@ -97,7 +126,9 @@ export function CustomerForm({
           id="email"
           type="email"
           value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, email: e.target.value })
+          }
           placeholder="Enter email address"
           required
         />
@@ -108,21 +139,24 @@ export function CustomerForm({
         <Input
           id="phone"
           value={formData.phone}
-          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, phone: e.target.value })
+          }
           placeholder="Enter phone number"
         />
       </div>
 
+      {/* Tier Selection */}
       <div className="space-y-2">
         <Label htmlFor="tier">Customer Tier</Label>
         <Select
           value={formData.tier}
-          onValueChange={(value: 'standard' | 'premium' | 'vip') =>
+          onValueChange={(value: "standard" | "premium" | "vip") =>
             setFormData({ ...formData, tier: value })
           }
         >
           <SelectTrigger>
-            <SelectValue />
+            <SelectValue placeholder="Select tier" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="standard">Standard</SelectItem>
@@ -133,15 +167,17 @@ export function CustomerForm({
       </div>
 
       {/* Address Section */}
-      <div className="space-y-4">
-        <Label className="text-base">Address (Optional)</Label>
-        
+      <div className="space-y-4 pt-4 border-t">
+        <Label className="text-base font-semibold">Address (Optional)</Label>
+
         <div className="space-y-2">
           <Label htmlFor="street">Street Address</Label>
           <Input
             id="street"
             value={formData.street}
-            onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, street: e.target.value })
+            }
             placeholder="Enter street address"
           />
         </div>
@@ -152,7 +188,9 @@ export function CustomerForm({
             <Input
               id="city"
               value={formData.city}
-              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, city: e.target.value })
+              }
               placeholder="Enter city"
             />
           </div>
@@ -162,7 +200,9 @@ export function CustomerForm({
             <Input
               id="state"
               value={formData.state}
-              onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, state: e.target.value })
+              }
               placeholder="Enter state"
             />
           </div>
@@ -174,7 +214,9 @@ export function CustomerForm({
             <Input
               id="zipCode"
               value={formData.zipCode}
-              onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, zipCode: e.target.value })
+              }
               placeholder="Enter ZIP code"
             />
           </div>
@@ -184,14 +226,17 @@ export function CustomerForm({
             <Input
               id="country"
               value={formData.country}
-              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, country: e.target.value })
+              }
               placeholder="Enter country"
             />
           </div>
         </div>
       </div>
 
-      <div className="flex justify-end space-x-2 pt-4">
+      {/* Actions */}
+      <div className="flex justify-end space-x-2 pt-6 border-t">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>

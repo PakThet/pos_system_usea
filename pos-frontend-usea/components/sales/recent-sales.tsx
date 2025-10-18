@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sale } from "@/types/sales";
+import { Sale } from "@/types/sale";
 import { 
   MoreHorizontal, 
   Eye, 

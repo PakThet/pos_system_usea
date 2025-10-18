@@ -1,115 +1,280 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Download, 
-  Plus, 
-  Filter,
-  Users 
-} from "lucide-react";
+import { Download, Plus, Users, RefreshCw } from "lucide-react";
 import { Customer, CustomerStats, CreateCustomerData } from "@/types/customer";
-import { CustomersStats } from "@/components/customers-stats";
-import { CustomersTable } from "@/components/customers-table";
-import { CustomerDetailsDialog } from "@/components/customer-details-dialog";
-import { CustomerForm } from "@/components/customer-form";
+import { CustomersStats } from "@/components/customers/customers-stats";
+import { CustomersTable } from "@/components/customers/customers-table";
+import { CustomerDetailsDialog } from "@/components/customers/customer-details-dialog";
+import { CustomerForm } from "@/components/customers/customer-form";
+import { toast } from "sonner";
+import { customerApi } from "@/services/customerApi";
 
-// Mock data - replace with actual API calls
+const USE_API = process.env.NEXT_PUBLIC_USE_API === "true";
+
+// Mock data
 const mockCustomers: Customer[] = [
   {
     id: "1",
-    firstName: "John",
-    lastName: "Doe",
+    first_name: "John",
+    last_name: "Doe",
     email: "john.doe@example.com",
     phone: "+1 (555) 123-4567",
     status: "active",
     tier: "premium",
-    totalOrders: 12,
-    totalSpent: 2450.75,
-    lastOrder: new Date('2024-01-15'),
-    createdAt: new Date('2023-05-10'),
-    updatedAt: new Date('2024-01-15'),
+    total_orders: 12,
+    total_spent: 2450.75,
+    last_order: new Date("2024-01-15").toISOString(),
+    created_at: new Date("2023-05-10").toISOString(),
+    updated_at: new Date("2024-01-15").toISOString(),
     address: {
       street: "123 Main Street",
       city: "New York",
       state: "NY",
-      zipCode: "10001",
-      country: "USA"
-    }
+      zip_code: "10001",
+      country: "USA",
+    },
   },
   {
     id: "2",
-    firstName: "Jane",
-    lastName: "Smith",
+    first_name: "Jane",
+    last_name: "Smith",
     email: "jane.smith@example.com",
     phone: "+1 (555) 987-6543",
     status: "active",
     tier: "vip",
-    totalOrders: 28,
-    totalSpent: 5890.25,
-    lastOrder: new Date('2024-01-14'),
-    createdAt: new Date('2022-11-20'),
-    updatedAt: new Date('2024-01-14'),
-    notes: "Preferred customer, always buys premium products"
-  },
-  {
-    id: "3",
-    firstName: "Bob",
-    lastName: "Johnson",
-    email: "bob.johnson@example.com",
-    status: "inactive",
-    tier: "standard",
-    totalOrders: 3,
-    totalSpent: 450.50,
-    lastOrder: new Date('2023-12-01'),
-    createdAt: new Date('2023-10-05'),
-    updatedAt: new Date('2024-01-10'),
-  },
-  {
-    id: "4",
-    firstName: "Alice",
-    lastName: "Brown",
-    email: "alice.brown@example.com",
-    phone: "+1 (555) 456-7890",
-    status: "active",
-    tier: "premium",
-    totalOrders: 15,
-    totalSpent: 3200.00,
-    lastOrder: new Date('2024-01-12'),
-    createdAt: new Date('2023-03-15'),
-    updatedAt: new Date('2024-01-12'),
+    total_orders: 28,
+    total_spent: 5890.25,
+    last_order: new Date("2024-01-14").toISOString(),
+    created_at: new Date("2022-11-20").toISOString(),
+    updated_at: new Date("2024-01-14").toISOString(),
+    notes: "Preferred customer, always buys premium products",
     address: {
       street: "456 Oak Avenue",
       city: "Los Angeles",
       state: "CA",
-      zipCode: "90210",
-      country: "USA"
-    }
-  }
+      zip_code: "90210",
+      country: "USA",
+    },
+  },
 ];
 
+
 const mockStats: CustomerStats = {
-  total: 1247,
-  active: 984,
-  inactive: 263,
-  newThisMonth: 42,
-  premium: 156,
-  vip: 28,
-  averageOrderValue: 189.50
+  total: 156,
+  active: 142,
+  inactive: 14,
+  new_this_month: 12,
+  premium: 45,
+  vip: 22,
+  average_order_value: 1823.72,
+  tierDistribution: { standard: 89, premium: 45, vip: 22 },
 };
 
+// Transform API response to app customer
+const transformApiCustomer = (apiCustomer: any): Customer => ({
+  id: apiCustomer.id.toString(),
+  first_name: apiCustomer.first_name,
+  last_name: apiCustomer.last_name,
+  email: apiCustomer.email,
+  phone: apiCustomer.phone || "",
+  status: apiCustomer.status,
+  tier: apiCustomer.tier,
+  total_orders: apiCustomer.total_orders || 0,
+  total_spent: parseFloat(apiCustomer.total_spent) || 0,
+  last_order: apiCustomer.last_order || undefined,
+  notes: apiCustomer.notes || "",
+  created_at: apiCustomer.created_at,
+  updated_at: apiCustomer.updated_at,
+  address:
+    apiCustomer.address?.map((a: any) => ({
+      street: a.street ?? "",
+      city: a.city ?? "",
+      state: a.state ?? "",
+      zip_code: a.zip_code ?? "",
+      country: a.country ?? "",
+    })) || [],
+});
+
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [stats, setStats] = useState<CustomerStats | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleViewCustomer = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowDetails(true);
+  useEffect(() => {
+    fetchCustomers();
+    fetchStats();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      setIsRefreshing(true);
+      if (!USE_API) setCustomers(mockCustomers);
+      else {
+        const response = await customerApi.getCustomers();
+        if (response.success) setCustomers(response.data.map(transformApiCustomer));
+        else toast.error("Failed to fetch customers");
+      }
+    } catch {
+      toast.error("Failed to fetch customers");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      if (!USE_API) setStats(mockStats);
+      else {
+        const response = await customerApi.getCustomerStats();
+        if (response.success) setStats(response.data);
+        else toast.error("Failed to fetch customer statistics");
+      }
+    } catch {
+      toast.error("Failed to fetch customer statistics");
+    }
+  };
+
+  const handleCreateCustomer = async (data: CreateCustomerData) => {
+    setIsLoading(true);
+    try {
+      const newCustomer: Customer = {
+        id: Date.now().toString(),
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        phone: data.phone ?? "",
+        status: data.status ?? "active",
+        tier: data.tier ?? "standard",
+        total_orders: 0,
+        total_spent: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        address: data.address
+  ? {
+      street: data.address.street ?? "",
+      city: data.address.city ?? "",
+      state: data.address.state ?? "",
+      zip_code: data.address.zip_code ?? "",
+      country: data.address.country ?? "",
+    }
+  : customers[0].address,
+
+      };
+
+      if (!USE_API) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        setCustomers((prev) => [...prev, newCustomer]);
+        setShowForm(false);
+        toast.success("Customer created successfully");
+      } else {
+        const response = await customerApi.createCustomer(data);
+        if (response.success) {
+          setCustomers((prev) => [...prev, transformApiCustomer(response.data)]);
+          fetchStats();
+          setShowForm(false);
+          toast.success("Customer created successfully");
+        } else toast.error("Failed to create customer");
+      }
+    } catch {
+      toast.error("Failed to create customer");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateCustomer = async (data: CreateCustomerData) => {
+    if (!editingCustomer) return;
+    setIsLoading(true);
+    try {
+      if (!USE_API) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        setCustomers((prev) =>
+          prev.map((customer) =>
+            customer.id === editingCustomer.id
+              ? {
+                  ...customer,
+                  first_name: data.first_name,
+                  last_name: data.last_name,
+                  email: data.email,
+                  phone: data.phone ?? "",
+                  status: data.status ?? customer.status,
+                  tier: data.tier ?? customer.tier,
+                  notes: data.notes ?? customer.notes ?? "",
+                  address: data.address
+  ? {
+      street: data.address.street ?? "",
+      city: data.address.city ?? "",
+      state: data.address.state ?? "",
+      zip_code: data.address.zip_code ?? "",
+      country: data.address.country ?? "",
+    }
+  : customer.address,
+
+                  updated_at: new Date().toISOString(),
+                }
+              : customer
+          )
+        );
+        setEditingCustomer(null);
+        setShowForm(false);
+        toast.success("Customer updated successfully");
+      } else {
+        const response = await customerApi.updateCustomer(editingCustomer.id, data);
+        if (response.success) {
+          const apiCustomer = transformApiCustomer(response.data);
+          setCustomers((prev) =>
+            prev.map((c) => (c.id === editingCustomer.id ? apiCustomer : c))
+          );
+          setEditingCustomer(null);
+          setShowForm(false);
+          fetchStats();
+          toast.success("Customer updated successfully");
+        } else toast.error("Failed to update customer");
+      }
+    } catch {
+      toast.error("Failed to update customer");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteCustomer = async (customerId: string) => {
+    try {
+      const customerToDelete = customers.find((c) => c.id === customerId);
+      if (!customerToDelete) return;
+
+      if (!USE_API) {
+        setCustomers((prev) => prev.filter((c) => c.id !== customerId));
+        toast.success("Customer deleted successfully");
+      } else {
+        const response = await customerApi.deleteCustomer(customerId);
+        if (response.success) {
+          setCustomers((prev) => prev.filter((c) => c.id !== customerId));
+          fetchStats();
+          toast.success("Customer deleted successfully");
+        } else toast.error("Failed to delete customer");
+      }
+    } catch {
+      toast.error("Failed to delete customer");
+    }
+  };
+
+  const handleExportCustomers = () => toast.info("Export functionality coming soon");
+  const handleCancelForm = () => {
+    setShowForm(false);
+    setEditingCustomer(null);
+  };
+  const handleRefresh = () => {
+    fetchCustomers();
+    fetchStats();
   };
 
   const handleEditCustomer = (customer: Customer) => {
@@ -118,93 +283,34 @@ export default function CustomersPage() {
   };
 
   const handleContactCustomer = (customer: Customer) => {
-    // Implement contact functionality
-    console.log('Contact customer:', customer);
-  };
-
-  const handleCreateCustomer = async (data: CreateCustomerData) => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const newCustomer: Customer = {
-      id: Date.now().toString(),
-      ...data,
-      status: "active",
-      totalOrders: 0,
-      totalSpent: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    
-    setCustomers(prev => [...prev, newCustomer]);
-    setShowForm(false);
-    setIsLoading(false);
-  };
-
-  const handleUpdateCustomer = async (data: CreateCustomerData) => {
-    if (!editingCustomer) return;
-    
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setCustomers(prev =>
-      prev.map(customer =>
-        customer.id === editingCustomer.id
-          ? { 
-              ...customer, 
-              ...data, 
-              updatedAt: new Date() 
-            }
-          : customer
-      )
-    );
-    
-    setEditingCustomer(null);
-    setShowForm(false);
-    setIsLoading(false);
-  };
-
-  const handleExportCustomers = () => {
-    // Implement export functionality
-    console.log('Export customers');
-  };
-
-  const handleCancelForm = () => {
-    setShowForm(false);
-    setEditingCustomer(null);
+    toast.info(`Contacting ${customer.first_name} ${customer.last_name}`);
   };
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Users className="h-8 w-8" />
-            Customers
+            <Users className="h-8 w-8" /> Customers
           </h1>
-          <p className="text-muted-foreground">
-            Manage your customer relationships and data
-          </p>
+          <p className="text-muted-foreground">Manage your customer relationships and data</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
           <Button variant="outline" onClick={handleExportCustomers}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
+            <Download className="h-4 w-4 mr-2" /> Export
           </Button>
           <Button onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Customer
+            <Plus className="h-4 w-4 mr-2" /> Add Customer
           </Button>
         </div>
       </div>
 
-      {/* Statistics */}
-      <CustomersStats stats={mockStats} />
+      {stats && <CustomersStats stats={stats} />}
 
-      {/* Customers Table */}
       <Card>
         <CardHeader>
           <CardTitle>Customer List</CardTitle>
@@ -212,14 +318,18 @@ export default function CustomersPage() {
         <CardContent>
           <CustomersTable
             customers={customers}
-            onView={handleViewCustomer}
+            onView={(c) => {
+              setSelectedCustomer(c);
+              setShowDetails(true);
+            }}
             onEdit={handleEditCustomer}
             onContact={handleContactCustomer}
+            onDelete={handleDeleteCustomer}
+            isLoading={isRefreshing}
           />
         </CardContent>
       </Card>
 
-      {/* Customer Details Dialog */}
       <CustomerDetailsDialog
         customer={selectedCustomer}
         open={showDetails}
@@ -227,13 +337,10 @@ export default function CustomersPage() {
         onEdit={handleEditCustomer}
       />
 
-      {/* Customer Form Dialog */}
       {showForm && (
         <Card>
           <CardHeader>
-            <CardTitle>
-              {editingCustomer ? "Edit Customer" : "Add New Customer"}
-            </CardTitle>
+            <CardTitle>{editingCustomer ? "Edit Customer" : "Add New Customer"}</CardTitle>
           </CardHeader>
           <CardContent>
             <CustomerForm

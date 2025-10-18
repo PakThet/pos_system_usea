@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SalesSummary } from "@/types/sales";
+import { SalesSummary } from "@/types/sale";
 import { 
   DollarSign, 
   CreditCard, 

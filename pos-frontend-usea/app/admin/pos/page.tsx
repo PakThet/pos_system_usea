@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ArrowLeft, Receipt } from "lucide-react";
 
-// Mock data - replace with actual API calls
 const mockProducts: Product[] = [
   {
     id: "1",
@@ -21,7 +20,6 @@ const mockProducts: Product[] = [
     barcode: "123456789012",
     category: "Electronics",
     stock: 25,
-    minStock: 5,
     taxRate: 0.08,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -35,7 +33,6 @@ const mockProducts: Product[] = [
     barcode: "123456789013",
     category: "Accessories",
     stock: 100,
-    minStock: 10,
     taxRate: 0.08,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -49,7 +46,6 @@ const mockProducts: Product[] = [
     barcode: "123456789014",
     category: "Accessories",
     stock: 50,
-    minStock: 15,
     taxRate: 0.08,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -63,7 +59,6 @@ const mockProducts: Product[] = [
     barcode: "123456789015",
     category: "Bags",
     stock: 30,
-    minStock: 5,
     taxRate: 0.08,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -77,7 +72,6 @@ const mockProducts: Product[] = [
     barcode: "123456789016",
     category: "Electronics",
     stock: 75,
-    minStock: 10,
     taxRate: 0.08,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -91,7 +85,6 @@ const mockProducts: Product[] = [
     barcode: "123456789017",
     category: "Accessories",
     stock: 200,
-    minStock: 25,
     taxRate: 0.08,
     createdAt: new Date(),
     updatedAt: new Date()

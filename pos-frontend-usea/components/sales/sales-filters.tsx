@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { SalesFilter } from "@/types/sales";
+import { SalesFilter } from "@/types/sale";
 import { Calendar, Filter, Download } from "lucide-react";
 
 interface SalesFiltersProps {

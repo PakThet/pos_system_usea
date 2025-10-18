@@ -2,135 +2,77 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\Category;
+use Exception;
 use Illuminate\Http\Request;
 
-class CategoryController extends Controller
+class CategoryController extends ApiController
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    public function index()
     {
         try {
-            $query = Category::query();
-
-            if ($request->has('search')) {
-                $search = $request->input('search');
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('desc', 'like', "%{$search}%");
-                });
-            }
-
-            $categories = $query->get();
-
-            return response()->json([
-                'success' => true,
-                'data' => $categories,
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            $categories = Category::all(); 
+            return $this->success($categories, 'Categories fetched successfully');
+        } catch (Exception $e) {
+            return $this->error($e->getMessage());
         }
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         try {
-            $request->validate([
+            $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'slug' => 'required|string|max:255|unique:categories',
-                'desc' => 'nullable|string',
-                'status' => 'in:active,inactive',
+                'slug' => 'required|string|unique:categories,slug',
+                'description' => 'nullable|string',
+                'status' => 'sometimes|in:active,inactive',
             ]);
 
-            $category = Category::create($request->all());
-
-            return response()->json([
-                'success' => true,
-                'message' => 'created successfully',
-                'data' => $category,
-            ], 201);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ],);
+            $category = Category::create($validated);
+            return $this->success($category, 'Category created successfully'); // removed load('store')
+        } catch (Exception $e) {
+            return $this->error($e->getMessage());
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Category $category)
     {
         try {
-            $category = Category::findOrFail($id);
-            return response()->json([
-                'success' => true,
-                'data' => $category,
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ],);
+            $category->load('products'); // only load products
+            return $this->success($category, 'Category fetched successfully');
+        } catch (Exception $e) {
+            return $this->error($e->getMessage());
         }
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Category $category)
     {
         try {
-            $category = Category::findOrFail($id);
-
-            $request->validate([
-                'name' => 'sometimes|required|string|max:255',
-                'slug' => 'sometimes|required|string|max:255|unique:categories,slug,' . $category->id,
-                'desc' => 'nullable|string',
-                'status' => 'in:active,inactive',
+            $validated = $request->validate([
+                'name' => 'sometimes|string|max:255',
+                'slug' => 'sometimes|string|unique:categories,slug,' . $category->id,
+                'description' => 'nullable|string',
+                'status' => 'sometimes|in:active,inactive',
             ]);
 
-            $category->update($request->all());
-
-            return response()->json([
-                'success' => true,
-                'message' => 'updated successfully',
-                'data' => $category,
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ],);
+            $category->update($validated);
+            return $this->success($category, 'Category updated successfully'); // removed load('store')
+        } catch (Exception $e) {
+            return $this->error($e->getMessage());
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(Category $category)
     {
         try {
-            Category::destroy($id);
-            return response()->json([
-                'success' => true,
-                'message' => 'deleted successfully',
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ],);
+            if ($category->products()->exists()) {
+                return $this->error('Cannot delete category with associated products', 422);
+            }
+
+            $category->delete();
+            return $this->success(null, 'Category deleted successfully');
+        } catch (Exception $e) {
+            return $this->error($e->getMessage());
         }
     }
 }

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TopProduct } from "@/types/sales";
+import { TopProduct } from "@/types/sale";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 interface TopProductsProps {

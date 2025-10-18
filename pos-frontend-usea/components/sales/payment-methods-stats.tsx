@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { PaymentMethodStats } from "@/types/sales";
+import { PaymentMethodStats } from "@/types/sale";
 import { CreditCard, DollarSign, Smartphone, Wallet } from "lucide-react";
 
 interface PaymentMethodsStatsProps {

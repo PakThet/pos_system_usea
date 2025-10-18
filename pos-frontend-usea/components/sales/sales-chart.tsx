@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SalesTrend } from "@/types/sales";
+import { SalesTrend } from "@/types/sale";
 import { TrendingUp } from "lucide-react";
 
 interface SalesChartProps {

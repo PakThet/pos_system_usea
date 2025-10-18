@@ -8,91 +8,38 @@ import {
   Plus, 
   Filter,
   Users,
-  Clock
+  Clock,
+  RefreshCw
 } from "lucide-react";
 import { Cashier, CashierStats, CreateCashierData } from "@/types/cashier";
-import { CashiersStats } from "@/components/cashiers-stats";
-import { CashiersTable } from "@/components/cashiers-table";
-import { CashierDetailsDialog } from "@/components/cashier-details-dialog";
-import { CashierForm } from "@/components/cashier-form";
+import { toast } from "sonner";
+import { cashierApi } from "@/services/cashierApi";
+import { CashiersStats } from "@/components/cashiers/cashiers-stats";
+import { CashiersTable } from "@/components/cashiers/cashiers-table";
+import { CashierDetailsDialog } from "@/components/cashiers/cashier-details-dialog";
+import { CashierForm } from "@/components/cashiers/cashier-form";
 
 const USE_API = process.env.NEXT_PUBLIC_USE_API === "true";
 
 const mockCashiers: Cashier[] = [
   {
     id: "1",
-    employeeId: "CASH-001",
-    firstName: "Sarah",
-    lastName: "Johnson",
+    employee_id: "CASH-001",
+    first_name: "Sarah",
+    last_name: "Johnson",
     email: "sarah.johnson@store.com",
     phone: "+1 (555) 123-4567",
     status: "active",
     role: "head-cashier",
     shift: "morning",
-    hourlyRate: 22.50,
-    totalHours: 156,
-    totalSales: 125000,
-    totalTransactions: 1245,
-    lastLogin: new Date('2024-01-15T08:30:00'),
-    createdAt: new Date('2023-01-15'),
-    updatedAt: new Date('2024-01-15'),
-    permissions: ["process_sales", "handle_returns", "view_reports", "manage_discounts", "void_transactions", "manage_users"]
-  },
-  {
-    id: "2",
-    employeeId: "CASH-002",
-    firstName: "Mike",
-    lastName: "Chen",
-    email: "mike.chen@store.com",
-    phone: "+1 (555) 987-6543",
-    status: "on-break",
-    role: "senior-cashier",
-    shift: "afternoon",
-    hourlyRate: 18.75,
-    totalHours: 142,
-    totalSales: 98000,
-    totalTransactions: 987,
-    lastLogin: new Date('2024-01-15T14:15:00'),
-    createdAt: new Date('2023-03-20'),
-    updatedAt: new Date('2024-01-15'),
-    permissions: ["process_sales", "handle_returns", "view_reports", "manage_discounts", "void_transactions"]
-  },
-  {
-    id: "3",
-    employeeId: "CASH-003",
-    firstName: "Emily",
-    lastName: "Rodriguez",
-    email: "emily.rodriguez@store.com",
-    phone: "+1 (555) 456-7890",
-    status: "active",
-    role: "cashier",
-    shift: "evening",
-    hourlyRate: 16.25,
-    totalHours: 128,
-    totalSales: 75600,
-    totalTransactions: 765,
-    lastLogin: new Date('2024-01-14T16:45:00'),
-    createdAt: new Date('2023-06-10'),
-    updatedAt: new Date('2024-01-14'),
-    permissions: ["process_sales", "handle_returns", "view_reports"]
-  },
-  {
-    id: "4",
-    employeeId: "CASH-004",
-    firstName: "David",
-    lastName: "Wilson",
-    email: "david.wilson@store.com",
-    phone: "+1 (555) 321-0987",
-    status: "inactive",
-    role: "cashier",
-    shift: "night",
-    hourlyRate: 17.50,
-    totalHours: 95,
-    totalSales: 45200,
-    totalTransactions: 432,
-    createdAt: new Date('2023-08-05'),
-    updatedAt: new Date('2024-01-10'),
-    permissions: ["process_sales", "handle_returns"]
+    hourly_rate: 22.50,
+    total_hours: 156,
+    total_sales: 125000,
+    total_transactions: 1245,
+    last_login_at: new Date('2024-01-15T08:30:00').toISOString(),
+    permissions: ["process_sales", "handle_returns", "view_reports", "manage_discounts", "void_transactions", "manage_users"],
+    created_at: new Date('2023-01-15').toISOString(),
+    updated_at: new Date('2024-01-15').toISOString(),
   }
 ];
 
@@ -105,15 +52,120 @@ const mockStats: CashierStats = {
   averageTransaction: 106.45
 };
 
+// Transform API cashier to app cashier format
+const transformApiCashier = (apiCashier: any): Cashier => ({
+  id: apiCashier.id.toString(),
+  employee_id: apiCashier.employee_id,
+  first_name: apiCashier.first_name,
+  last_name: apiCashier.last_name,
+  email: apiCashier.email,
+  phone: apiCashier.phone || undefined,
+  status: apiCashier.status,
+  role: apiCashier.role,
+  shift: apiCashier.shift,
+  hourly_rate: parseFloat(apiCashier.hourly_rate),
+  total_hours: apiCashier.total_hours || 0,
+  total_sales: parseFloat(apiCashier.total_sales) || 0,
+  total_transactions: apiCashier.total_transactions || 0,
+  last_login_at: apiCashier.last_login_at || undefined,
+  permissions: Array.isArray(apiCashier.permissions)
+    ? apiCashier.permissions
+    : JSON.parse(apiCashier.permissions || '[]'), 
+  created_at: apiCashier.created_at,
+  updated_at: apiCashier.updated_at,
+});
 
 
 export default function CashiersPage() {
-  const [cashiers, setCashiers] = useState<Cashier[]>(mockCashiers);
+  const [cashiers, setCashiers] = useState<Cashier[]>([]);
+  const [stats, setStats] = useState<CashierStats | null>(null);
   const [selectedCashier, setSelectedCashier] = useState<Cashier | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingCashier, setEditingCashier] = useState<Cashier | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Fetch cashiers and stats on component mount
+  useEffect(() => {
+    fetchCashiers();
+    // fetchStats();
+  }, []);
+
+  const fetchCashiers = async () => {
+    try {
+      setIsRefreshing(true);
+      
+      if (!USE_API) {
+        // Use mock data
+        setCashiers(mockCashiers);
+      } else {
+        const response = await cashierApi.getCashiers();
+        if (response.success) {
+          const transformedCashiers = response.data.map(transformApiCashier);
+          setCashiers(transformedCashiers);
+        } else {
+          console.error('Failed to fetch cashiers:', response.message);
+          toast.error('Failed to fetch cashiers');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching cashiers:', error);
+      toast.error('Failed to fetch cashiers');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+
+//   const fetchCashiers = async () => {
+//   try {
+//     setIsRefreshing(true);
+
+//     if (!USE_API) {
+//       setCashiers(mockCashiers);
+//     } else {
+//       const response = await cashierApi.getCashiers();
+
+//       if (response.success && Array.isArray(response.data)) {
+//         const transformedCashiers = response.data.map(transformApiCashier);
+//         setCashiers(transformedCashiers);
+//       } else if (response.success && response.data && Array.isArray(response.data.cashiers)) {
+//         // If API wraps cashiers in an object
+//         const transformedCashiers = response.data.cashiers.map(transformApiCashier);
+//         setCashiers(transformedCashiers);
+//       } else {
+//         console.error('Failed to fetch cashiers: data is not an array', response.data);
+//         toast.error('Failed to fetch cashiers: invalid data format');
+//       }
+//     }
+//   } catch (error) {
+//     console.error('Error fetching cashiers:', error);
+//     toast.error('Failed to fetch cashiers');
+//   } finally {
+//     setIsRefreshing(false);
+//   }
+// };
+
+
+  // const fetchStats = async () => {
+  //   try {
+  //     if (!USE_API) {
+  //       setStats(mockStats);
+  //     } else {
+  //       const response = await cashierApi.getCashierStats();
+  //       if (response.success) {
+  //         setStats(response.data);
+  //       } else {
+  //         console.error('Failed to fetch stats:', response.message);
+  //         toast.error('Failed to fetch cashier statistics');
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching stats:', error);
+  //     toast.error('Failed to fetch cashier statistics');
+  //   }
+  // };
 
   const handleViewCashier = (cashier: Cashier) => {
     setSelectedCashier(cashier);
@@ -125,83 +177,251 @@ export default function CashiersPage() {
     setShowForm(true);
   };
 
-  useEffect(()=>{
-    const fetchData = async()=>{
-      if(!USE_API){
-        
+  const handleStatusChange = async (cashierId: string, status: Cashier['status']) => {
+    try {
+      if (!USE_API) {
+        // Mock status change
+        setCashiers(prev =>
+          prev.map(cashier =>
+            cashier.id === cashierId
+              ? { ...cashier, status, updated_at: new Date().toISOString() }
+              : cashier
+          )
+        );
+        toast.success('Cashier status updated successfully');
+      } else {
+        const response = await cashierApi.updateCashierStatus(cashierId, status);
+        if (response.success) {
+          const updatedCashier = transformApiCashier(response.data);
+          setCashiers(prev =>
+            prev.map(cashier =>
+              cashier.id === cashierId ? updatedCashier : cashier
+            )
+          );
+          toast.success('Cashier status updated successfully');
+          // Refresh stats to get updated counts
+          // fetchStats();
+        } else {
+          console.error('Failed to update cashier status:', response.message);
+          toast.error('Failed to update cashier status');
+        }
       }
+    } catch (error) {
+      console.error('Error updating cashier status:', error);
+      toast.error('Failed to update cashier status');
     }
-  }, [])
-
-  const handleStatusChange = (cashierId: string, status: Cashier['status']) => {
-    setCashiers(prev =>
-      prev.map(cashier =>
-        cashier.id === cashierId
-          ? { ...cashier, status, updatedAt: new Date() }
-          : cashier
-      )
-    );
   };
 
   const handleCreateCashier = async (data: CreateCashierData) => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const newCashier: Cashier = {
-      id: Date.now().toString(),
-      employeeId: `CASH-${String(cashiers.length + 1).padStart(3, '0')}`,
-      ...data,
-      status: "active",
-      totalHours: 0,
-      totalSales: 0,
-      totalTransactions: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    
-    setCashiers(prev => [...prev, newCashier]);
-    setShowForm(false);
+  setIsLoading(true);
+  try {
+    if (!USE_API) {
+      // Mock creation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Destructure permissions to handle separately and ignore employee_id from data
+      const { permissions, ...rest } = data;
+
+      const newCashier: Cashier = {
+  id: Date.now().toString(),
+  ...data, // spread first
+  employee_id: `CASH-${String(cashiers.length + 1).padStart(3, '0')}`, 
+  total_hours: 0,
+  total_sales: 0,
+  total_transactions: 0,
+  last_login_at: undefined,
+  permissions: data.permissions || [],
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
+
+      setCashiers(prev => [...prev, newCashier]);
+      setShowForm(false);
+      toast.success('Cashier created successfully');
+
+      // Update mock stats
+      setStats(prev =>
+        prev
+          ? {
+              ...prev,
+              total: prev.total + 1,
+              active: prev.active + (data.status === 'active' ? 1 : 0),
+              onBreak: prev.onBreak + (data.status === 'on-break' ? 1 : 0),
+            }
+          : null
+      );
+    } else {
+      const response = await cashierApi.createCashier(data);
+      if (response.success) {
+        const newCashier = transformApiCashier(response.data);
+        setCashiers(prev => [...prev, newCashier]);
+        setShowForm(false);
+        toast.success('Cashier created successfully');
+        // Refresh stats to get updated counts
+        // fetchStats();
+      } else {
+        console.error('Failed to create cashier:', response.message);
+        toast.error('Failed to create cashier');
+      }
+    }
+  } catch (error) {
+    console.error('Error creating cashier:', error);
+    toast.error('Failed to create cashier');
+  } finally {
     setIsLoading(false);
-  };
+  }
+};
+
 
   const handleUpdateCashier = async (data: CreateCashierData) => {
     if (!editingCashier) return;
     
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setCashiers(prev =>
-      prev.map(cashier =>
-        cashier.id === editingCashier.id
-          ? { 
-              ...cashier, 
-              ...data, 
-              updatedAt: new Date() 
-            }
-          : cashier
-      )
-    );
-    
-    setEditingCashier(null);
-    setShowForm(false);
-    setIsLoading(false);
+    try {
+      if (!USE_API) {
+        // Mock update
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setCashiers(prev =>
+          prev.map(cashier =>
+            cashier.id === editingCashier.id
+              ? { 
+                  ...cashier, 
+                  ...data, 
+                  updated_at: new Date().toISOString() 
+                }
+              : cashier
+          )
+        );
+        setEditingCashier(null);
+        setShowForm(false);
+        toast.success('Cashier updated successfully');
+        
+        // Update mock stats if status changed
+        if (data.status && data.status !== editingCashier.status) {
+          setStats(prev => prev ? {
+            ...prev,
+            active: prev.active + (data.status === 'active' ? 1 : -1),
+            onBreak: prev.onBreak + (data.status === 'on-break' ? 1 : -1)
+          } : null);
+        }
+      } else {
+        const response = await cashierApi.updateCashier(editingCashier.id, data);
+        if (response.success) {
+          const updatedCashier = transformApiCashier(response.data);
+          setCashiers(prev =>
+            prev.map(cashier =>
+              cashier.id === editingCashier.id ? updatedCashier : cashier
+            )
+          );
+          setEditingCashier(null);
+          setShowForm(false);
+          toast.success('Cashier updated successfully');
+        } else {
+          console.error('Failed to update cashier:', response.message);
+          toast.error('Failed to update cashier');
+        }
+      }
+    } catch (error) {
+      console.error('Error updating cashier:', error);
+      toast.error('Failed to update cashier');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteCashier = async (cashierId: string) => {
+    try {
+      if (!USE_API) {
+        // Mock deletion
+        const cashierToDelete = cashiers.find(c => c.id === cashierId);
+        if (cashierToDelete) {
+          setCashiers(prev => prev.filter(cashier => cashier.id !== cashierId));
+          toast.success('Cashier deleted successfully');
+          
+          // Update mock stats
+          setStats(prev => prev ? {
+            ...prev,
+            total: prev.total - 1,
+            active: prev.active - (cashierToDelete.status === 'active' ? 1 : 0),
+            onBreak: prev.onBreak - (cashierToDelete.status === 'on-break' ? 1 : 0),
+          } : null);
+        }
+      } else {
+        const response = await cashierApi.deleteCashier(cashierId);
+        if (response.success) {
+          setCashiers(prev => prev.filter(cashier => cashier.id !== cashierId));
+          toast.success('Cashier deleted successfully');
+          // Refresh stats to get updated counts
+          // fetchStats();
+        } else {
+          console.error('Failed to delete cashier:', response.message);
+          toast.error('Failed to delete cashier');
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting cashier:', error);
+      toast.error('Failed to delete cashier');
+    }
+  };
+
+  const handleRecordLogin = async (cashierId: string) => {
+    try {
+      if (!USE_API) {
+        // Mock login recording
+        setCashiers(prev =>
+          prev.map(cashier =>
+            cashier.id === cashierId
+              ? { 
+                  ...cashier, 
+                  last_login_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                }
+              : cashier
+          )
+        );
+        toast.success('Login recorded successfully');
+      } else {
+        const response = await cashierApi.recordCashierLogin(cashierId);
+        if (response.success) {
+          const updatedCashier = transformApiCashier(response.data);
+          setCashiers(prev =>
+            prev.map(cashier =>
+              cashier.id === cashierId ? updatedCashier : cashier
+            )
+          );
+          toast.success('Login recorded successfully');
+        } else {
+          console.error('Failed to record login:', response.message);
+          toast.error('Failed to record login');
+        }
+      }
+    } catch (error) {
+      console.error('Error recording login:', error);
+      toast.error('Failed to record login');
+    }
   };
 
   const handleExportCashiers = () => {
     // Implement export functionality
     console.log('Export cashiers');
+    toast.info('Export functionality coming soon');
   };
 
   const handleScheduleManagement = () => {
     // Implement schedule management
     console.log('Manage schedules');
+    toast.info('Schedule management coming soon');
   };
 
   const handleCancelForm = () => {
     setShowForm(false);
     setEditingCashier(null);
+  };
+
+  const handleRefresh = () => {
+    fetchCashiers();
+    // fetchStats();
   };
 
   return (
@@ -218,6 +438,14 @@ export default function CashiersPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
           <Button variant="outline" onClick={handleScheduleManagement}>
             <Clock className="h-4 w-4 mr-2" />
             Schedules
@@ -234,7 +462,7 @@ export default function CashiersPage() {
       </div>
 
       {/* Statistics */}
-      <CashiersStats stats={mockStats} />
+      {stats && <CashiersStats stats={stats} />}
 
       {/* Cashiers Table */}
       <Card>
@@ -247,6 +475,9 @@ export default function CashiersPage() {
             onView={handleViewCashier}
             onEdit={handleEditCashier}
             onStatusChange={handleStatusChange}
+            onRecordLogin={handleRecordLogin}
+            onDelete={handleDeleteCashier}
+            isLoading={isRefreshing}
           />
         </CardContent>
       </Card>

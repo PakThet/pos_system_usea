@@ -7,7 +7,6 @@ export interface Product {
   barcode: string;
   category: string;
   stock: number;
-  minStock: number;
   image?: string;
   taxRate: number;
   createdAt: Date;

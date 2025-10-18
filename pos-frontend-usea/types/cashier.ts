@@ -1,23 +1,35 @@
 export interface Cashier {
   id: string;
-  employeeId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
   avatar?: string;
+  employee_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
   status: 'active' | 'inactive' | 'on-break';
   role: 'cashier' | 'senior-cashier' | 'head-cashier';
   shift: 'morning' | 'afternoon' | 'evening' | 'night';
-  hourlyRate: number;
-  totalHours: number;
-  totalSales: number;
-  totalTransactions: number;
-  lastLogin?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  hourly_rate: number;
+  total_hours: number;
+  total_sales: number;
+  total_transactions: number;
+  last_login_at?: string;
   permissions: string[];
-  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCashierData {
+  employee_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  status: 'active' | 'inactive' | 'on-break';
+  role: 'cashier' | 'senior-cashier' | 'head-cashier';
+  shift: 'morning' | 'afternoon' | 'evening' | 'night';
+  hourly_rate: number;
+  permissions?: string[];
 }
 
 export interface CashierStats {
@@ -28,18 +40,3 @@ export interface CashierStats {
   totalTransactions: number;
   averageTransaction: number;
 }
-
-export interface CreateCashierData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  role: 'cashier' | 'senior-cashier' | 'head-cashier';
-  shift: 'morning' | 'afternoon' | 'evening' | 'night';
-  hourlyRate: number;
-  permissions: string[];
-}
-
-export type CashierStatus = Cashier['status'];
-export type CashierRole = Cashier['role'];
-export type CashierShift = Cashier['shift'];

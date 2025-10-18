@@ -6,37 +6,34 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
+    public function up()
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('image')->nullable();
-            $table->foreignId('store_id')->constrained('stores')->onDelete('cascade');
-            // $table->foreignId('warehouse_id')->constrained('warehouses')->onDelete('cascade');
-            $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
-            $table->string("p_name");
+            $table->foreignId('store_id')->constrained()->onDelete('cascade');
+            $table->foreignId('category_id')->constrained()->onDelete('cascade');
+            $table->string('name');
             $table->text('description')->nullable();
             $table->string('sku')->unique();
             $table->string('slug')->unique();
-            $table->string('barcode')->unique();   
+            $table->string('barcode')->unique();
             $table->decimal('price', 10, 2);
-            $table->decimal('tax', 5, 2);
-            $table->integer('stock');
+            $table->decimal('tax_rate', 5, 2)->default(0);
+ $table->string('status')->default('active');
             $table->integer('quantity')->default(0);
-            $table->decimal('discount', 10, 2)->nullable();
-            $table->integer('quantity_alert')->default(0);
-
+            $table->decimal('discount', 10, 2)->default(0);
+            $table->decimal('cost_price', 10, 2)->default(0); 
+            $table->integer('quantity_alert')->default(5);
             $table->timestamps();
+            
+            $table->index(['store_id', 'category_id']);
+            $table->index('sku');
+            $table->index('barcode');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('products');
     }
