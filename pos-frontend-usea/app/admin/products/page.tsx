@@ -13,62 +13,58 @@ import { Button } from '@/components/ui/button';
 import { Product, CreateProductData } from '@/types/product';
 import { productApi } from '@/services/productApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, DollarSign, AlertTriangle, TrendingUp, Plus, Grid3X3, Table } from 'lucide-react';
+import { Package, DollarSign, AlertTriangle, TrendingUp, Plus, Grid3X3, Table, ArrowDownRight, ArrowUpRight } from 'lucide-react';
 
-// Animation variants for stats cards
-const cardVariants = {
-  hidden: { 
-    opacity: 0, 
-    y: 20,
-    scale: 0.95
-  },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      delay: i * 0.1,
-      duration: 0.5,
-      ease: "easeOut"
-    }
-  }),
-  hover: {
-    y: -5,
-    scale: 1.02,
-    transition: {
-      duration: 0.2,
-      ease: "easeInOut"
-    }
-  }
-};
+// KPICard Component
+function KPICard({
+  title,
+  value,
+  change,
+  icon: Icon,
+  description,
+}: {
+  title: string
+  value: string
+  change: number
+  icon: any
+  description: string
+}) {
+  const isPositive = change >= 0
+  return (
+    <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300 }}>
+      <Card className="relative overflow-hidden border-slate-200/50 bg-white/50 backdrop-blur-sm">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium text-slate-600">{title}</CardTitle>
+          <div
+            className={`p-2 rounded-lg ${
+              isPositive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+          </div>
+        </CardHeader>
 
+        <CardContent>
+          <div className="text-2xl font-bold text-slate-900">{value}</div>
+          <div className="flex items-center gap-1 mt-1">
+            {isPositive ? (
+              <ArrowUpRight className="h-3 w-3 text-green-600" />
+            ) : (
+              <ArrowDownRight className="h-3 w-3 text-red-600" />
+            )}
+            <span className={`text-xs font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+              {isPositive ? '+' : ''}
+              {change}%
+            </span>
+            <span className="text-xs text-slate-500 ml-1">{description}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  )
+}
 
-const numberVariants = {
-  hidden: { scale: 0.8, opacity: 0 },
-  visible: {
-    scale: 1,
-    opacity: 1,
-    transition: {
-      delay: 0.3,
-      duration: 0.5,
-      ease: "easeOut"
-    }
-  }
-};
-
-const iconVariants = {
-  hidden: { scale: 0, rotate: -180 },
-  visible: {
-    scale: 1,
-    rotate: 0,
-    transition: {
-      duration: 0.6,
-      ease: "easeOut"
-    }
-  }
-};
-
-// Enhanced Stats Cards Component
+// Enhanced Stats Cards Component using KPICard
 function StatsCards({ 
   totalProducts, 
   totalValue, 
@@ -80,157 +76,47 @@ function StatsCards({
   lowStockProducts: number;
   averagePrice: number;
 }) {
-  const stats = [
+  const kpiCards = [
     {
       title: "Total Products",
-      value: totalProducts,
+      value: totalProducts.toString(),
+      change: 12, // You can calculate actual change based on previous data
       icon: Package,
-      color: "from-blue-500 to-cyan-500",
-      bgColor: "bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950",
-      borderColor: "border-blue-200 dark:border-blue-800",
-      textColor: "text-blue-700 dark:text-blue-300",
-      iconBg: "bg-blue-500",
-      gradient: "bg-gradient-to-br from-blue-500 to-cyan-500"
+      description: "from last month"
     },
     {
       title: "Total Value",
       value: `$${totalValue.toLocaleString()}`,
+      change: 8, // You can calculate actual change based on previous data
       icon: DollarSign,
-      color: "from-green-500 to-emerald-500",
-      bgColor: "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950",
-      borderColor: "border-green-200 dark:border-green-800",
-      textColor: "text-green-700 dark:text-green-300",
-      iconBg: "bg-green-500",
-      gradient: "bg-gradient-to-br from-green-500 to-emerald-500"
+      description: "from last month"
     },
     {
       title: "Low Stock",
-      value: lowStockProducts,
+      value: lowStockProducts.toString(),
+      change: -5, // You can calculate actual change based on previous data
       icon: AlertTriangle,
-      color: "from-orange-500 to-red-500",
-      bgColor: "bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950",
-      borderColor: "border-orange-200 dark:border-orange-800",
-      textColor: "text-orange-700 dark:text-orange-300",
-      iconBg: "bg-orange-500",
-      gradient: "bg-gradient-to-br from-orange-500 to-red-500",
-      isAlert: lowStockProducts > 0
+      description: "items need restock"
     },
     {
       title: "Avg Price",
       value: `$${averagePrice.toFixed(2)}`,
+      change: 3, // You can calculate actual change based on previous data
       icon: TrendingUp,
-      color: "from-purple-500 to-pink-500",
-      bgColor: "bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950",
-      borderColor: "border-purple-200 dark:border-purple-800",
-      textColor: "text-purple-700 dark:text-purple-300",
-      iconBg: "bg-purple-500",
-      gradient: "bg-gradient-to-br from-purple-500 to-pink-500"
+      description: "from last month"
     }
   ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {stats.map((stat, index) => (
+      {kpiCards.map((card, index) => (
         <motion.div
-          key={stat.title}
-          custom={index}
-          variants={cardVariants}
-          initial="hidden"
-          animate="visible"
-          whileHover="hover"
-          className="h-full"
+          key={card.title}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.1 }}
         >
-          <Card className={`
-            h-full border-2 ${stat.borderColor} 
-            ${stat.bgColor} 
-            shadow-sm hover:shadow-xl 
-            transition-all duration-300
-            overflow-hidden
-            relative
-            group
-            backdrop-blur-sm
-          `}>
-            {/* Animated background gradient */}
-            <div className={`
-              absolute inset-0 bg-gradient-to-br ${stat.color} 
-              opacity-0 group-hover:opacity-5 
-              transition-opacity duration-500
-            `} />
-            
-            {/* Pulse animation for alert cards */}
-            {stat.isAlert && (
-              <motion.div
-                className="absolute top-2 right-2"
-                animate={{
-                  scale: [1, 1.2, 1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              >
-                <div className="w-2 h-2 bg-red-500 rounded-full" />
-              </motion.div>
-            )}
-
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
-              <CardTitle className={`text-sm font-semibold ${stat.textColor}`}>
-                {stat.title}
-              </CardTitle>
-              <motion.div
-                variants={iconVariants}
-                initial="hidden"
-                animate="visible"
-                className={`
-                  p-2 rounded-lg ${stat.iconBg} 
-                  shadow-lg group-hover:shadow-xl
-                  transition-all duration-300
-                `}
-              >
-                <stat.icon className="h-4 w-4 text-white" />
-              </motion.div>
-            </CardHeader>
-            
-            <CardContent className="relative z-10">
-              <motion.div
-                variants={numberVariants}
-                initial="hidden"
-                animate="visible"
-                className={`
-                  text-3xl font-bold ${stat.textColor}
-                  tracking-tight
-                `}
-              >
-                {stat.value}
-              </motion.div>
-              
-              {/* Progress bar for low stock indicator */}
-              {stat.title === "Low Stock" && lowStockProducts > 0 && (
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: "100%" }}
-                  transition={{ delay: 0.5, duration: 1 }}
-                  className="mt-2 h-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
-                />
-              )}
-              
-              {/* Subtle trend indicator for average price */}
-              {stat.title === "Avg Price" && averagePrice > 0 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.7 }}
-                  className="flex items-center gap-1 mt-1"
-                >
-                  <TrendingUp className="h-3 w-3 text-green-500" />
-                  <span className="text-xs text-muted-foreground">
-                    Market average
-                  </span>
-                </motion.div>
-              )}
-            </CardContent>
-          </Card>
+          <KPICard {...card} />
         </motion.div>
       ))}
     </div>
@@ -389,7 +275,7 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {/* Enhanced Stats Cards */}
+        {/* Enhanced Stats Cards using KPICard */}
         <StatsCards
           totalProducts={totalProducts}
           totalValue={totalValue}
