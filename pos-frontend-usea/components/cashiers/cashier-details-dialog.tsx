@@ -72,9 +72,9 @@ export function CashierDetailsDialog({
             <DialogTitle className="flex items-center gap-3">
               <CashierAvatar cashier={cashier} className="h-12 w-12" />
               <div>
-                <div className="text-xl">{cashier.firstName} {cashier.lastName}</div>
+                <div className="text-xl">{cashier.first_name} {cashier.last_name}</div>
                 <div className="text-sm font-normal text-muted-foreground">
-                  Employee ID: {cashier.employeeId}
+                  Employee ID: {cashier.employee_id}
                 </div>
               </div>
             </DialogTitle>
@@ -95,21 +95,21 @@ export function CashierDetailsDialog({
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Total Sales</span>
                 </div>
-                <div className="text-2xl font-bold">{formatCurrency(cashier.totalSales)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(cashier.total_sales)}</div>
               </div>
               <div className="border rounded-lg p-4 text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Transactions</span>
                 </div>
-                <div className="text-2xl font-bold">{cashier.totalTransactions}</div>
+                <div className="text-2xl font-bold">{cashier.total_transactions}</div>
               </div>
               <div className="border rounded-lg p-4 text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Hours Worked</span>
                 </div>
-                <div className="text-2xl font-bold">{cashier.totalHours}h</div>
+                <div className="text-2xl font-bold">{cashier.total_hours}h</div>
               </div>
             </div>
 
@@ -194,11 +194,11 @@ export function CashierDetailsDialog({
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Hourly Rate:</span>
-                  <span className="font-medium">{formatCurrency(cashier.hourlyRate)}/hr</span>
+                  <span className="font-medium">{formatCurrency(cashier.hourly_rate)}/hr</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Joined:</span>
-                  <span>{formatDate(cashier.createdAt)}</span>
+                  <span>{formatDate(cashier.created_at)}</span>
                 </div>
                 {cashier.lastLogin && (
                   <div className="flex justify-between">

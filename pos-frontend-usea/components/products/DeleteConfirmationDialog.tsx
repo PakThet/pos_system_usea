@@ -31,7 +31,7 @@ export const DeleteConfirmationDialog = ({
           <DialogDescription>
             Are you sure you want to delete{" "}
             <span className="font-semibold text-foreground">
-              {product?.p_name}
+              {product?.name}
             </span>
             ? This action cannot be undone.
           </DialogDescription>
