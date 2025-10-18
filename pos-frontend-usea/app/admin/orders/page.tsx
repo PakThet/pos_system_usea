@@ -1,160 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Plus, Filter } from "lucide-react";
-import { Order, OrderStats } from "@/types/order";
+import { Download, Filter, RefreshCw } from "lucide-react";
+import { Order, OrderStatus, OrderStats } from "@/types/order";
 import { OrdersStats } from "@/components/orders/orders-stats";
 import { OrdersTable } from "@/components/orders/orders-table";
 import { OrderDetailsDialog } from "@/components/orders/order-details-dialog";
+import { useOrders } from "@/hooks/useOrders";
+import { orderApi } from "@/services/orderApi";
 
-// Mock data - replace with actual API calls
-const mockOrders: Order[] = [
-  {
-    id: "1",
-    orderNumber: "ORD-001",
-    customer: {
-      id: "cust1",
-      name: "John Doe",
-      email: "john.doe@example.com",
-      phone: "+1 (555) 123-4567"
-    },
-    items: [
-      {
-        id: "item1",
-        productId: "prod1",
-        productName: "Wireless Headphones",
-        price: 199.99,
-        quantity: 1
-      },
-      {
-        id: "item2",
-        productId: "prod2",
-        productName: "Phone Case",
-        price: 29.99,
-        quantity: 2
-      }
-    ],
-    status: "processing",
-    paymentStatus: "paid",
-    totalAmount: 259.97,
-    shippingAddress: {
-      street: "123 Main St",
-      city: "New York",
-      state: "NY",
-      zipCode: "10001",
-      country: "USA"
-    },
-    billingAddress: {
-      street: "123 Main St",
-      city: "New York",
-      state: "NY",
-      zipCode: "10001",
-      country: "USA"
-    },
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-15'),
-    estimatedDelivery: new Date('2024-01-20')
-  },
-  {
-    id: "2",
-    orderNumber: "ORD-002",
-    customer: {
-      id: "cust2",
-      name: "Jane Smith",
-      email: "jane.smith@example.com"
-    },
-    items: [
-      {
-        id: "item3",
-        productId: "prod3",
-        productName: "Laptop Backpack",
-        price: 89.99,
-        quantity: 1
-      }
-    ],
-    status: "shipped",
-    paymentStatus: "paid",
-    totalAmount: 89.99,
-    shippingAddress: {
-      street: "456 Oak Ave",
-      city: "Los Angeles",
-      state: "CA",
-      zipCode: "90210",
-      country: "USA"
-    },
-    billingAddress: {
-      street: "456 Oak Ave",
-      city: "Los Angeles",
-      state: "CA",
-      zipCode: "90210",
-      country: "USA"
-    },
-    createdAt: new Date('2024-01-14'),
-    updatedAt: new Date('2024-01-16'),
-    trackingNumber: "TRK123456789"
-  },
-  {
-    id: "3",
-    orderNumber: "ORD-003",
-    customer: {
-      id: "cust3",
-      name: "Bob Johnson",
-      email: "bob.johnson@example.com"
-    },
-    items: [
-      {
-        id: "item4",
-        productId: "prod4",
-        productName: "Smart Watch",
-        price: 299.99,
-        quantity: 1
-      },
-      {
-        id: "item5",
-        productId: "prod5",
-        productName: "Screen Protector",
-        price: 19.99,
-        quantity: 1
-      }
-    ],
-    status: "pending",
-    paymentStatus: "pending",
-    totalAmount: 319.98,
-    shippingAddress: {
-      street: "789 Pine Rd",
-      city: "Chicago",
-      state: "IL",
-      zipCode: "60601",
-      country: "USA"
-    },
-    billingAddress: {
-      street: "789 Pine Rd",
-      city: "Chicago",
-      state: "IL",
-      zipCode: "60601",
-      country: "USA"
-    },
-    createdAt: new Date('2024-01-16'),
-    updatedAt: new Date('2024-01-16')
-  }
-];
-
-const mockStats: OrderStats = {
-  total: 156,
-  pending: 12,
-  confirmed: 8,
-  processing: 23,
-  shipped: 45,
-  delivered: 65,
-  cancelled: 3
-};
-
-export default function page() {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [orderStats, setOrderStats] = useState<OrderStats | null>(null);
+
+  const {
+    orders,
+    loading,
+    error,
+    pagination,
+    refetch
+  } = useOrders({
+    page: 1,
+    perPage: 10,
+  });
+
+  // Helper function to calculate stats from orders
+const calculateStats = (orders: Order[]): OrderStats => {
+  const stats: OrderStats = {
+    total: orders.length,
+    pending: orders.filter(o => o.status === "pending").length,
+    confirmed: orders.filter(o => o.status === "confirmed").length,
+    processing: orders.filter(o => o.status === "processing").length,
+    shipped: orders.filter(o => o.status === "shipped").length,
+    delivered: orders.filter(o => o.status === "delivered").length,
+    cancelled: orders.filter(o => o.status === "cancelled").length,
+    total_revenue: orders.reduce((sum, o) => sum + parseFloat(o.total_amount), 0),
+    totalTax: orders.reduce((sum, o) => sum + parseFloat(o.tax_amount), 0),
+    average_order_value: 0
+  };
+
+  stats.average_order_value = stats.total ? stats.total_revenue / stats.total : 0;
+
+  return stats;
+};
+
+
+  // Update stats whenever orders change
+  useEffect(() => {
+    if (orders && orders.length > 0) {
+      setOrderStats(calculateStats(orders));
+    }
+  }, [orders]);
 
   const handleViewOrder = (order: Order) => {
     setSelectedOrder(order);
@@ -162,24 +61,39 @@ export default function page() {
   };
 
   const handleEditOrder = (order: Order) => {
-    // Implement edit functionality
-    console.log('Edit order:', order);
+    console.log("Edit order:", order);
   };
 
-  const handleUpdateStatus = (orderId: string, status: Order['status']) => {
-    setOrders(prev =>
-      prev.map(order =>
-        order.id === orderId
-          ? { ...order, status, updatedAt: new Date() }
-          : order
-      )
-    );
+  const handleUpdateStatus = async (orderId: number, status: OrderStatus) => {
+    try {
+      await orderApi.updateOrderStatus(orderId.toString(), status);
+      refetch();
+    } catch (error) {
+      console.error("Error updating order status:", error);
+    }
   };
 
   const handleExportOrders = () => {
-    // Implement export functionality
-    console.log('Export orders');
+    console.log("Export orders");
   };
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-red-600">
+              <p>Error: {error}</p>
+              <Button onClick={refetch} className="mt-4">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -187,16 +101,18 @@ export default function page() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-          <p className="text-muted-foreground">
-            Manage and track your customer orders
-          </p>
+          <p className="text-muted-foreground">Manage and track your customer orders</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportOrders}>
+          <Button variant="outline" onClick={handleExportOrders} disabled={loading}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button>
+          <Button variant="outline" onClick={refetch} disabled={loading}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button disabled={loading}>
             <Filter className="h-4 w-4 mr-2" />
             Advanced Filters
           </Button>
@@ -204,17 +120,23 @@ export default function page() {
       </div>
 
       {/* Statistics */}
-      <OrdersStats stats={mockStats} />
+      {orderStats && <OrdersStats stats={orderStats} />}
 
       {/* Orders Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Orders</CardTitle>
+          <CardTitle>
+            Recent Orders
+            {loading && (
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                Loading...
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <OrdersTable
             orders={orders}
-            onView={handleViewOrder}
             onEdit={handleEditOrder}
             onUpdateStatus={handleUpdateStatus}
           />

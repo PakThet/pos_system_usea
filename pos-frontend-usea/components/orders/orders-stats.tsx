@@ -6,7 +6,8 @@ import {
   CheckCircle, 
   Truck, 
   XCircle,
-  TrendingUp 
+  TrendingUp,
+  DollarSign
 } from "lucide-react";
 
 interface OrdersStatsProps {

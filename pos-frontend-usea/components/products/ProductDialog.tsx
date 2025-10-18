@@ -1,4 +1,13 @@
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+"use client";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2Icon } from "lucide-react";
 import { Product, Category, Store, CreateProductData } from "@/types/product";
@@ -41,22 +50,26 @@ export const ProductDialog = ({
   onSubmit,
   onCancel,
 }: ProductDialogProps) => {
-  const isFormValid = formData.p_name && formData.description && formData.price && formData.category_id;
+  // ✅ Optional chaining to prevent runtime errors
+  const isFormValid =
+    formData?.name?.trim() &&
+    formData?.desc?.trim() &&
+    formData?.price >= 0 &&
+    formData?.category_id?.trim() &&
+    formData?.store_id?.trim();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {isAdd ? "Add New Product" : "Edit Product"}
-          </DialogTitle>
+          <DialogTitle>{isAdd ? "Add New Product" : "Edit Product"}</DialogTitle>
           <DialogDescription>
             {isAdd
               ? "Enter the details of the new product."
               : "Edit the details of the product."}
           </DialogDescription>
         </DialogHeader>
-        
+
         <ProductForm
           product={product}
           formData={formData}
@@ -71,24 +84,19 @@ export const ProductDialog = ({
         />
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={onCancel}
-            disabled={submitting}
-          >
+          <Button variant="outline" onClick={onCancel} disabled={submitting}>
             Cancel
           </Button>
-          <Button 
-            onClick={onSubmit}
-            disabled={!isFormValid || submitting}
-          >
+          <Button onClick={onSubmit} disabled={!isFormValid || submitting}>
             {submitting ? (
               <>
                 <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
                 {isAdd ? "Adding..." : "Updating..."}
               </>
+            ) : isAdd ? (
+              "Add Product"
             ) : (
-              isAdd ? "Add Product" : "Update Product"
+              "Update Product"
             )}
           </Button>
         </DialogFooter>

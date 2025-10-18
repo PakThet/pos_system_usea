@@ -8,7 +8,7 @@ class CustomerApiService extends BaseApiService {
   }
 
   async getCustomerStats(): Promise<ApiResponse<CustomerStats>> {
-    return this.fetchApi<CustomerStats>('/customers/stats');
+    return this.fetchApi<CustomerStats>(`/customers/stats`);
   }
 
   async getCustomer(id: string): Promise<ApiResponse<Customer>> {
@@ -36,11 +36,15 @@ class CustomerApiService extends BaseApiService {
   }
 
   async searchCustomers(query: string): Promise<ApiResponse<Customer[]>> {
-    return this.fetchApi<Customer[]>(`/customers/search/${query}`);
+    return this.fetchApi<Customer[]>(`/customers/search?q=${query}`);
   }
 
   async getCustomerOrders(customerId: string): Promise<ApiResponse<any>> {
     return this.fetchApi(`/customers/${customerId}/orders`);
+  }
+
+  async getCustomerAddresses(customerId: string): Promise<ApiResponse<any>> {
+    return this.fetchApi(`/customers/${customerId}/addresses`);
   }
 }
 

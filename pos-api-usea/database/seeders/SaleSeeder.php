@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Database\Seeder;
@@ -33,7 +34,7 @@ class SaleSeeder extends Seeder
             $saleItems = [
                 [
                     'sale_id' => $sale->id,
-                    'product_id' => 1,
+                    'product_id' => Product::where('name', 'iPhone 15 Pro Max')->value('id'),
                     'product_name' => 'iPhone 15 Pro Max',
                     'sku' => 'IP15PM-256GB',
                     'category_name' => 'Smartphones',
@@ -45,7 +46,7 @@ class SaleSeeder extends Seeder
                 ],
                 [
                     'sale_id' => $sale->id,
-                    'product_id' => 9,
+                    'product_id' => Product::where('name', 'iPhone 15 Pro Max')->value('id'),
                     'product_name' => 'Apple AirPods Pro (2nd Gen)',
                     'sku' => 'APP2-WHITE',
                     'category_name' => 'Audio Devices',

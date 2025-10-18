@@ -1,435 +1,559 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect } from "react";
-import { Product, Category, Store, CreateProductData } from "@/types/product";
-import { PageHeader } from "@/components/products/PageHeader";
-import { ProductFilters } from "@/components/products/ProductFilters";
-import { ProductTable } from "@/components/products/ProductTable";
-import { ProductDialog } from "@/components/products/ProductDialog";
-import { DeleteConfirmationDialog } from "@/components/products/DeleteConfirmationDialog";
-import { 
-  fetchProducts, 
-  fetchCategories, 
-  fetchStores, 
-  createProduct, 
-  updateProduct, 
-  deleteProduct,
-  transformToApiProductFormat 
-} from "@/lib/api-utils";
-import { mockProducts, mockCategories, mockStores } from "@/lib/mock-data";
-import { LoadingSpinner } from "@/components/products/LoadingSpinner";
-import { ErrorAlert } from "@/components/products/ErrorAlert";
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useProducts } from '@/hooks/useProducts';
+import { ProductForm } from '@/components/products/ProductForm';
+import { ProductCard } from '@/components/products/ProductCard';
+import { ProductsTable } from '@/components/products/ProductTable';
+import { ProductFilters } from '@/components/products/ProductFilters';
+import { Pagination } from '@/components/products/Pagination';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Product, CreateProductData } from '@/types/product';
+import { productApi } from '@/services/productApi';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Package, DollarSign, AlertTriangle, TrendingUp, Plus, Grid3X3, Table } from 'lucide-react';
 
-const USE_API = process.env.NEXT_PUBLIC_USE_API === "true";
+// Animation variants for stats cards
+const cardVariants = {
+  hidden: { 
+    opacity: 0, 
+    y: 20,
+    scale: 0.95
+  },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      delay: i * 0.1,
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  }),
+  hover: {
+    y: -5,
+    scale: 1.02,
+    transition: {
+      duration: 0.2,
+      ease: "easeInOut"
+    }
+  }
+};
+
+
+const numberVariants = {
+  hidden: { scale: 0.8, opacity: 0 },
+  visible: {
+    scale: 1,
+    opacity: 1,
+    transition: {
+      delay: 0.3,
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  }
+};
+
+const iconVariants = {
+  hidden: { scale: 0, rotate: -180 },
+  visible: {
+    scale: 1,
+    rotate: 0,
+    transition: {
+      duration: 0.6,
+      ease: "easeOut"
+    }
+  }
+};
+
+// Enhanced Stats Cards Component
+function StatsCards({ 
+  totalProducts, 
+  totalValue, 
+  lowStockProducts, 
+  averagePrice 
+}: { 
+  totalProducts: number;
+  totalValue: number;
+  lowStockProducts: number;
+  averagePrice: number;
+}) {
+  const stats = [
+    {
+      title: "Total Products",
+      value: totalProducts,
+      icon: Package,
+      color: "from-blue-500 to-cyan-500",
+      bgColor: "bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950",
+      borderColor: "border-blue-200 dark:border-blue-800",
+      textColor: "text-blue-700 dark:text-blue-300",
+      iconBg: "bg-blue-500",
+      gradient: "bg-gradient-to-br from-blue-500 to-cyan-500"
+    },
+    {
+      title: "Total Value",
+      value: `$${totalValue.toLocaleString()}`,
+      icon: DollarSign,
+      color: "from-green-500 to-emerald-500",
+      bgColor: "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950",
+      borderColor: "border-green-200 dark:border-green-800",
+      textColor: "text-green-700 dark:text-green-300",
+      iconBg: "bg-green-500",
+      gradient: "bg-gradient-to-br from-green-500 to-emerald-500"
+    },
+    {
+      title: "Low Stock",
+      value: lowStockProducts,
+      icon: AlertTriangle,
+      color: "from-orange-500 to-red-500",
+      bgColor: "bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950",
+      borderColor: "border-orange-200 dark:border-orange-800",
+      textColor: "text-orange-700 dark:text-orange-300",
+      iconBg: "bg-orange-500",
+      gradient: "bg-gradient-to-br from-orange-500 to-red-500",
+      isAlert: lowStockProducts > 0
+    },
+    {
+      title: "Avg Price",
+      value: `$${averagePrice.toFixed(2)}`,
+      icon: TrendingUp,
+      color: "from-purple-500 to-pink-500",
+      bgColor: "bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950",
+      borderColor: "border-purple-200 dark:border-purple-800",
+      textColor: "text-purple-700 dark:text-purple-300",
+      iconBg: "bg-purple-500",
+      gradient: "bg-gradient-to-br from-purple-500 to-pink-500"
+    }
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {stats.map((stat, index) => (
+        <motion.div
+          key={stat.title}
+          custom={index}
+          variants={cardVariants}
+          initial="hidden"
+          animate="visible"
+          whileHover="hover"
+          className="h-full"
+        >
+          <Card className={`
+            h-full border-2 ${stat.borderColor} 
+            ${stat.bgColor} 
+            shadow-sm hover:shadow-xl 
+            transition-all duration-300
+            overflow-hidden
+            relative
+            group
+            backdrop-blur-sm
+          `}>
+            {/* Animated background gradient */}
+            <div className={`
+              absolute inset-0 bg-gradient-to-br ${stat.color} 
+              opacity-0 group-hover:opacity-5 
+              transition-opacity duration-500
+            `} />
+            
+            {/* Pulse animation for alert cards */}
+            {stat.isAlert && (
+              <motion.div
+                className="absolute top-2 right-2"
+                animate={{
+                  scale: [1, 1.2, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                <div className="w-2 h-2 bg-red-500 rounded-full" />
+              </motion.div>
+            )}
+
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+              <CardTitle className={`text-sm font-semibold ${stat.textColor}`}>
+                {stat.title}
+              </CardTitle>
+              <motion.div
+                variants={iconVariants}
+                initial="hidden"
+                animate="visible"
+                className={`
+                  p-2 rounded-lg ${stat.iconBg} 
+                  shadow-lg group-hover:shadow-xl
+                  transition-all duration-300
+                `}
+              >
+                <stat.icon className="h-4 w-4 text-white" />
+              </motion.div>
+            </CardHeader>
+            
+            <CardContent className="relative z-10">
+              <motion.div
+                variants={numberVariants}
+                initial="hidden"
+                animate="visible"
+                className={`
+                  text-3xl font-bold ${stat.textColor}
+                  tracking-tight
+                `}
+              >
+                {stat.value}
+              </motion.div>
+              
+              {/* Progress bar for low stock indicator */}
+              {stat.title === "Low Stock" && lowStockProducts > 0 && (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: "100%" }}
+                  transition={{ delay: 0.5, duration: 1 }}
+                  className="mt-2 h-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
+                />
+              )}
+              
+              {/* Subtle trend indicator for average price */}
+              {stat.title === "Avg Price" && averagePrice > 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.7 }}
+                  className="flex items-center gap-1 mt-1"
+                >
+                  <TrendingUp className="h-3 w-3 text-green-500" />
+                  <span className="text-xs text-muted-foreground">
+                    Market average
+                  </span>
+                </motion.div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [stores, setStores] = useState<Store[]>([]);
-  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
-  const [isEditProductDialogOpen, setIsEditProductDialogOpen] = useState(false);
-  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
+  const [viewProduct, setViewProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ category: "all", inStock: "all" });
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshFlag, setRefreshFlag] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [newProduct, setNewProduct] = useState<CreateProductData>({
-    image: "",
-    store_id: "",
-    category_id: "",
-    p_name: "",
-    slug: "",
-    sku: "",
-    barcode: "",
-    description: "",
-    quantity: 0,
-    price: "",
-    tax: "",
-    discount: "",
-    quantity_alert: 0
+  const { products, loading: productsLoading, error, pagination, refetch } = useProducts({
+    page: currentPage,
+    perPage: 12,
+    search,
+    status: status === 'all' ? undefined : status,
   });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        if (!USE_API) {
-          // Use mock data
-          setProducts(mockProducts);
-          setCategories(mockCategories);
-          setStores(mockStores);
-        } else {
-          const [productsData, categoriesData, storesData] = await Promise.all([
-            fetchProducts(),
-            fetchCategories(),
-            fetchStores()
-          ]);
-
-          setProducts(productsData);
-          setCategories(categoriesData);
-          setStores(storesData);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch data');
-        setProducts([]);
-        setCategories([]);
-        setStores([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [refreshFlag]);
-
-  const resetSelectedProduct = () => {
-    setSelectedProduct(null);
-    setImagePreview(null);
-    setNewProduct({
-      image: "",
-      store_id: "",
-      category_id: "",
-      p_name: "",
-      slug: "",
-      sku: "",
-      barcode: "",
-      description: "",
-      quantity: 0,
-      price: "",
-      tax: "",
-      discount: "",
-      quantity_alert: 0
-    });
-  };
-
-  const resetFilters = () => {
-    setFilters({ category: "all", inStock: "all" });
-    setSearchTerm("");
-  };
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
-        return;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
-        return;
-      }
-
-      setUploadingImage(true);
-      
-      setTimeout(() => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const imageUrl = e.target?.result as string;
-          setImagePreview(imageUrl);
-          
-          if (isAddProductDialogOpen) {
-            setNewProduct(prev => ({ ...prev, image: imageUrl }));
-          } else if (selectedProduct) {
-            setSelectedProduct(prev => prev ? { ...prev, image: imageUrl } : null);
-          }
-          setUploadingImage(false);
-        };
-        reader.readAsDataURL(file);
-      }, 1000);
+  const handleCreateProduct = async (formData: CreateProductData) => {
+    setLoading(true);
+    try {
+      await productApi.createProduct(formData);
+      setIsDialogOpen(false);
+      refetch();
+    } catch (error) {
+      console.error('Error creating product:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
-
-  const removeImage = () => {
-    setImagePreview(null);
-    if (isAddProductDialogOpen) {
-      setNewProduct(prev => ({ ...prev, image: "" }));
-    } else if (selectedProduct) {
-      setSelectedProduct(prev => prev ? { ...prev, image: "" } : null);
-    }
-  };
-
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.p_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.sku?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filters.category === "all" || product.category_id === filters.category;
-    const matchesStock =
-      filters.inStock === "all" ||
-      (filters.inStock === "in" && product.quantity > 0) ||
-      (filters.inStock === "out" && product.quantity === 0);
-
-    return matchesSearch && matchesCategory && matchesStock;
-  });
-
-  const handleAddProduct = async () => {
-    if (newProduct.p_name && newProduct.description && newProduct.price && newProduct.category_id) {
-      setSubmitting(true);
-      setError(null);
-      try {
-        if (!USE_API) {
-          // Mock implementation
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          const newProductData: Product = {
-            id: Date.now().toString(),
-            ...newProduct,
-            tax: Number(newProduct.tax),
-            discount: Number(newProduct.discount),
-            createdAt: new Date().toDateString(),
-            updatedAt: new Date().toDateString(),
-            store: stores.find(s => s.id === newProduct.store_id),
-            category: categories.find(c => c.id === newProduct.category_id)
-          };
-          setProducts(prev => [...prev, newProductData]);
-          setIsAddProductDialogOpen(false);
-          resetSelectedProduct();
-        } else {
-          const formData = new FormData();
-          
-          // Append all product data
-          const apiData = transformToApiProductFormat(newProduct);
-          Object.entries(apiData).forEach(([key, value]) => {
-            if (value !== null && value !== undefined) {
-              formData.append(key, value.toString());
-            }
-          });
-
-          // Append image file if exists
-          if (fileInputRef.current?.files?.[0]) {
-            formData.append('image', fileInputRef.current.files[0]);
-          }
-
-          const createdProduct = await createProduct(formData);
-          setProducts(prev => [...prev, createdProduct]);
-          setIsAddProductDialogOpen(false);
-          resetSelectedProduct();
-          setRefreshFlag(prev => prev + 1);
-        }
-      } catch (error) {
-        console.error('Error adding product:', error);
-        setError(error instanceof Error ? error.message : 'Failed to add product');
-      } finally {
-        setSubmitting(false);
-      }
-    }
-  };
-
-  const handleUpdateProduct = async () => {
-    if (selectedProduct) {
-      setSubmitting(true);
-      setError(null);
-      try {
-        if (!USE_API) {
-          // Mock implementation
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          setProducts(prev => prev.map(p => 
-            p.id === selectedProduct.id 
-              ? { ...selectedProduct, updatedAt: new Date().toDateString() }
-              : p
-          ));
-          setIsEditProductDialogOpen(false);
-          resetSelectedProduct();
-        } else {
-          const formData = new FormData();
-          
-          const updateData: CreateProductData = {
-            store_id: selectedProduct.store_id,
-            category_id: selectedProduct.category_id,
-            p_name: selectedProduct.p_name,
-            slug: selectedProduct.slug,
-            sku: selectedProduct.sku,
-            barcode: selectedProduct.barcode,
-            description: selectedProduct.description,
-            quantity: selectedProduct.quantity,
-            price: selectedProduct.price,
-            tax: selectedProduct.tax.toString(),
-            discount: selectedProduct.discount.toString(),
-            quantity_alert: selectedProduct.quantity_alert,
-            image: selectedProduct.image || ""
-          };
-
-          const apiData = transformToApiProductFormat(updateData);
-          Object.entries(apiData).forEach(([key, value]) => {
-            if (value !== null && value !== undefined) {
-              formData.append(key, value.toString());
-            }
-          });
-          formData.append('_method', 'PUT');
-
-          // Append image file if exists
-          if (fileInputRef.current?.files?.[0]) {
-            formData.append('image', fileInputRef.current.files[0]);
-          }
-
-          const updatedProduct = await updateProduct(selectedProduct.id, formData);
-          setProducts(prev => prev.map(p => 
-            p.id === selectedProduct.id ? updatedProduct : p
-          ));
-          setIsEditProductDialogOpen(false);
-          resetSelectedProduct();
-          setRefreshFlag(prev => prev + 1);
-        }
-      } catch (error) {
-        console.error('Error updating product:', error);
-        setError(error instanceof Error ? error.message : 'Failed to update product');
-      } finally {
-        setSubmitting(false);
-      }
+  const handleUpdateProduct = async (formData: CreateProductData) => {
+    if (!editingProduct) return;
+    
+    setLoading(true);
+    try {
+      await productApi.updateProduct(editingProduct.id.toString(), formData);
+      setIsDialogOpen(false);
+      setEditingProduct(null);
+      refetch();
+    } catch (error) {
+      console.error('Error updating product:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDeleteProduct = async () => {
-    if (productToDelete) {
-      setSubmitting(true);
-      setError(null);
-      try {
-        if (!USE_API) {
-          // Mock implementation
-          await new Promise(resolve => setTimeout(resolve, 500));
-          setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
-          setIsDeleteConfirmationOpen(false);
-          setProductToDelete(null);
-        } else {
-          await deleteProduct(productToDelete.id);
-          setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
-          setIsDeleteConfirmationOpen(false);
-          setProductToDelete(null);
-          setRefreshFlag(prev => prev + 1);
-        }
-      } catch (error) {
-        console.error('Error deleting product:', error);
-        setError(error instanceof Error ? error.message : 'Failed to delete product');
-      } finally {
-        setSubmitting(false);
-      }
+    if (!deleteProduct) return;
+    
+    setLoading(true);
+    try {
+      await productApi.deleteProduct(deleteProduct.id.toString());
+      setDeleteProduct(null);
+      refetch();
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleEditProduct = (product: Product) => {
-    setSelectedProduct(product);
-    setImagePreview(product.image || null);
-    setIsEditProductDialogOpen(true);
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    setIsDialogOpen(true);
   };
 
-  const handleDeleteClick = (product: Product) => {
-    setProductToDelete(product);
-    setIsDeleteConfirmationOpen(true);
+  const handleAddProduct = () => {
+    setEditingProduct(null);
+    setIsDialogOpen(true);
   };
 
-  if (loading) {
-    return <LoadingSpinner />;
+  // Calculate stats
+  const totalProducts = products.length;
+  const totalValue = products.reduce((sum, product) => sum + parseFloat(product.price) * product.quantity, 0);
+  const lowStockProducts = products.filter(product => product.quantity <= product.quantity_alert).length;
+  const averagePrice = totalProducts > 0 ? totalValue / totalProducts : 0;
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-red-600">
+              <p>Error: {error}</p>
+              <Button onClick={refetch} className="mt-4">
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <ErrorAlert error={error} onDismiss={() => setError(null)} />
+    <div className="container mx-auto p-6">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        {/* Enhanced Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
+          <div className="space-y-2">
+            <motion.h1 
+              className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              Product Management
+            </motion.h1>
+            <motion.p 
+              className="text-gray-600 dark:text-gray-400 text-lg"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              Manage your product inventory with ease
+            </motion.p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                onClick={() => setViewMode('grid')}
+                className="flex items-center gap-2"
+              >
+                <Grid3X3 className="h-4 w-4" />
+                Grid
+              </Button>
+              <Button
+                variant={viewMode === 'table' ? 'default' : 'outline'}
+                onClick={() => setViewMode('table')}
+                className="flex items-center gap-2"
+              >
+                <Table className="h-4 w-4" />
+                Table
+              </Button>
+            </div>
+            <Button 
+              onClick={handleAddProduct}
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            >
+              <Plus className="h-4 w-4" />
+              Add Product
+            </Button>
+          </div>
+        </div>
 
-      <PageHeader onAddProduct={() => setIsAddProductDialogOpen(true)} />
+        {/* Enhanced Stats Cards */}
+        <StatsCards
+          totalProducts={totalProducts}
+          totalValue={totalValue}
+          lowStockProducts={lowStockProducts}
+          averagePrice={averagePrice}
+        />
 
-      <ProductFilters
-        categories={categories}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        filters={filters}
-        onFiltersChange={setFilters}
-        onResetFilters={resetFilters}
-      />
+        <ProductFilters
+          search={search}
+          onSearchChange={setSearch}
+          status={status}
+          onStatusChange={setStatus}
+          onAddProduct={handleAddProduct}
+        />
 
-      <ProductTable
-        products={filteredProducts}
-        categories={categories}
-        onEditProduct={handleEditProduct}
-        onDeleteProduct={handleDeleteClick}
-      />
+        {productsLoading ? (
+          <motion.div 
+            className="flex justify-center items-center h-64"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <div className="text-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-600">Loading products...</p>
+            </div>
+          </motion.div>
+        ) : viewMode === 'grid' ? (
+          <motion.div
+            layout
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            {products.map((product, index) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <ProductCard
+                  product={product}
+                  onEdit={handleEdit}
+                  onDelete={setDeleteProduct}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <ProductsTable
+              products={products}
+              onEdit={handleEdit}
+              onDelete={setDeleteProduct}
+              onView={setViewProduct}
+            />
+          </motion.div>
+        )}
 
-      <ProductDialog
-        open={isAddProductDialogOpen || isEditProductDialogOpen}
-        isAdd={isAddProductDialogOpen}
-        product={selectedProduct}
-        formData={isAddProductDialogOpen ? newProduct : {
-          image: selectedProduct?.image || "",
-          store_id: selectedProduct?.store_id || "",
-          category_id: selectedProduct?.category_id || "",
-          p_name: selectedProduct?.p_name || "",
-          slug: selectedProduct?.slug || "",
-          sku: selectedProduct?.sku || "",
-          barcode: selectedProduct?.barcode || "",
-          description: selectedProduct?.description || "",
-          quantity: selectedProduct?.quantity || 0,
-          price: selectedProduct?.price || "",
-          tax: selectedProduct?.tax.toString() || "",
-          discount: selectedProduct?.discount.toString() || "",
-          quantity_alert: selectedProduct?.quantity_alert || 0
-        }}
-        categories={categories}
-        stores={stores}
-        imagePreview={imagePreview}
-        uploadingImage={uploadingImage}
-        submitting={submitting}
-        onOpenChange={(open) => {
-          if (!open) {
-            setIsAddProductDialogOpen(false);
-            setIsEditProductDialogOpen(false);
-            resetSelectedProduct();
-          }
-        }}
-        onFormDataChange={isAddProductDialogOpen ? setNewProduct : (data) => {
-          if (selectedProduct) {
-            setSelectedProduct({
-              ...selectedProduct,
-              ...data,
-              tax: parseFloat(data.tax) || 0,
-              discount: parseFloat(data.discount) || 0
-            });
-          }
-        }}
-        onImageUpload={handleImageUpload}
-        onRemoveImage={removeImage}
-        onTriggerFileInput={triggerFileInput}
-        onSubmit={isAddProductDialogOpen ? handleAddProduct : handleUpdateProduct}
-        onCancel={() => {
-          setIsAddProductDialogOpen(false);
-          setIsEditProductDialogOpen(false);
-          resetSelectedProduct();
-        }}
-      />
+        {pagination && pagination.last_page > 1 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Pagination
+              currentPage={currentPage}
+              totalPages={pagination.last_page}
+              onPageChange={setCurrentPage}
+            />
+          </motion.div>
+        )}
+      </motion.div>
 
-      <DeleteConfirmationDialog
-        open={isDeleteConfirmationOpen}
-        product={productToDelete}
-        submitting={submitting}
-        onOpenChange={setIsDeleteConfirmationOpen}
-        onConfirm={handleDeleteProduct}
-        onCancel={() => {
-          setIsDeleteConfirmationOpen(false);
-          setProductToDelete(null);
-        }}
-      />
+      {/* Dialogs remain the same */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingProduct ? 'Edit Product' : 'Create New Product'}
+            </DialogTitle>
+          </DialogHeader>
+          <ProductForm
+            product={editingProduct || undefined}
+            onSubmit={editingProduct ? handleUpdateProduct : handleCreateProduct}
+            onCancel={() => {
+              setIsDialogOpen(false);
+              setEditingProduct(null);
+            }}
+            loading={loading}
+          />
+        </DialogContent>
+      </Dialog>
 
-      {/* Hidden file input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleImageUpload}
-        accept="image/*"
-        className="hidden"
-      />
+      <Dialog open={!!deleteProduct} onOpenChange={() => setDeleteProduct(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+          </DialogHeader>
+          <p>
+            Are you sure you want to delete <strong>{deleteProduct?.name}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex justify-end space-x-4">
+            <Button variant="outline" onClick={() => setDeleteProduct(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteProduct} disabled={loading}>
+              {loading ? 'Deleting...' : 'Delete'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!viewProduct} onOpenChange={() => setViewProduct(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Product Details</DialogTitle>
+          </DialogHeader>
+          {viewProduct && (
+            <div className="space-y-4">
+              <img
+                src={viewProduct.image}
+                alt={viewProduct.name}
+                className="w-full h-64 object-cover rounded-lg"
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold">Name</h3>
+                  <p>{viewProduct.name}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold">SKU</h3>
+                  <p>{viewProduct.sku}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold">Price</h3>
+                  <p>${parseFloat(viewProduct.price).toLocaleString()}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold">Quantity</h3>
+                  <p>{viewProduct.quantity}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold">Category</h3>
+                  <p>{viewProduct.category.name}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold">Status</h3>
+                  <p>{viewProduct.status}</p>
+                </div>
+              </div>
+              <div>
+                <h3 className="font-semibold">Description</h3>
+                <p>{viewProduct.description}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

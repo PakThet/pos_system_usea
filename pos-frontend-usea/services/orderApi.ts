@@ -1,27 +1,48 @@
-import { ApiResponse } from '@/types/api';
+import { ApiResponse, PaginatedResponse } from '@/types/api';
 import BaseApiService from './baseApi';
-import { Order, CreateOrderData, OrderStats } from '@/types/order';
+import { Order, OrderStats } from '@/types/order';
 
 class OrderApiService extends BaseApiService {
-  async getOrders(): Promise<ApiResponse<Order[]>> {
-    return this.fetchApi<Order[]>('/orders');
+  async getOrders(params?: {
+    page?: number;
+    per_page?: number;
+    search?: string;
+    status?: string;
+    payment_status?: string;
+    customer_id?: number;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<PaginatedResponse<Order>> {
+    const queryParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+
+    const endpoint = `/orders${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return this.fetchApi<Order[]>(endpoint) as Promise<PaginatedResponse<Order>>;
   }
 
   async getOrder(id: string): Promise<ApiResponse<Order>> {
     return this.fetchApi<Order>(`/orders/${id}`);
   }
 
-  async createOrder(data: CreateOrderData): Promise<ApiResponse<Order>> {
-    return this.fetchApi<Order>('/orders', {
-      method: 'POST',
-      body: JSON.stringify(data),
+
+  async updateOrderStatus(id: string, status: Order['status']): Promise<ApiResponse<Order>> {
+    return this.fetchApi<Order>(`/orders/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
     });
   }
 
-  async updateOrder(id: string, data: Partial<CreateOrderData>): Promise<ApiResponse<Order>> {
+  async updatePaymentStatus(id: string, payment_status: Order['payment_status']): Promise<ApiResponse<Order>> {
     return this.fetchApi<Order>(`/orders/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ payment_status }),
     });
   }
 
@@ -29,24 +50,6 @@ class OrderApiService extends BaseApiService {
     return this.fetchApi<void>(`/orders/${id}`, {
       method: 'DELETE',
     });
-  }
-
-  async updateOrderStatus(id: string, status: string): Promise<ApiResponse<Order>> {
-    return this.fetchApi<Order>(`/orders/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
-  }
-
-  async updatePaymentStatus(id: string, paymentStatus: string): Promise<ApiResponse<Order>> {
-    return this.fetchApi<Order>(`/orders/${id}/payment-status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ payment_status: paymentStatus }),
-    });
-  }
-
-  async getOrderStats(): Promise<ApiResponse<OrderStats>> {
-    return this.fetchApi<OrderStats>('/orders/stats/summary');
   }
 }
 

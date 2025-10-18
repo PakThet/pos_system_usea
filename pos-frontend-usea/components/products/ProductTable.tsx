@@ -1,150 +1,98 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { FilePenIcon, SearchIcon, TrashIcon } from "lucide-react";
-import { Category, Product } from "@/types/product";
+import React from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Product } from '@/types/product';
+import { Edit, Trash2, Eye } from 'lucide-react';
 
-interface ProductTableProps {
+interface ProductsTableProps {
   products: Product[];
-  categories: Category[];
-  onEditProduct: (product: Product) => void;
-  onDeleteProduct: (product: Product) => void;
+  onEdit: (product: Product) => void;
+  onDelete: (product: Product) => void;
+  onView: (product: Product) => void;
 }
 
-const getStockStatus = (stock: number) => {
-  if (stock === 0) return { label: "Out of Stock", variant: "destructive" as const };
-  if (stock < 10) return { label: "Low Stock", variant: "secondary" as const };
-  return { label: "In Stock", variant: "default" as const };
-};
-
-export const ProductTable = ({ 
-  products, 
-  categories,
-  onEditProduct, 
-  onDeleteProduct 
-}: ProductTableProps) => {
-  if (products.length === 0) {
-    return (
-      <Card>
-        <CardContent className="py-8">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <SearchIcon className="w-12 h-12 text-muted-foreground" />
-            <p className="text-lg font-medium">No products found</p>
-            <p className="text-muted-foreground">
-              Try adjusting your search or filters
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
+export const ProductsTable: React.FC<ProductsTableProps> = ({
+  products,
+  onEdit,
+  onDelete,
+  onView,
+}) => {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Product Inventory</CardTitle>
-        <span className="text-sm text-muted-foreground">
-          {products.length} product{products.length !== 1 ? 's' : ''} found
-        </span>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[270px]">Product</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Store</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="w-[120px] text-center">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {products.map((product) => {
-                const stockStatus = getStockStatus(product.quantity);
-                const category = categories.find(c => c.id === product.category_id);
-                
-                return (
-                  <TableRow key={product.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-6">
-                        <img 
-                          src={product.image || "/placeholder.jpg"} 
-                          alt={product.p_name}
-                          className="w-10 h-10 rounded-md object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/placeholder.jpg";
-                          }}
-                        />
-                        <div>
-                          <div className="font-medium">{product.p_name}</div>
-                          <div className="text-sm text-muted-foreground">{product.slug}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{product.sku}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{product.store?.name}</div>
-                        <div className="text-muted-foreground">{product.store?.location}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      ${product.price}
-{product.discount && Number(product.discount) > 0 && (
-  <div className="text-xs text-green-600">
-    -${Number(product.discount).toFixed(2)} off
-  </div>
-)}
-
-
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={stockStatus.variant}>
-                          {stockStatus.label}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          ({product.quantity})
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{category?.name}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => onEditProduct(product)}
-                        >
-                          <FilePenIcon className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => onDeleteProduct(product)}
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <div className="text-sm text-muted-foreground">
-          Showing {products.length} products
-        </div>
-      </CardFooter>
-    </Card>
+    <div className="border rounded-lg">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Image</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>SKU</TableHead>
+            <TableHead>Price</TableHead>
+            <TableHead>Quantity</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {products.map((product) => (
+            <TableRow key={product.id}>
+              <TableCell>
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-12 h-12 object-cover rounded"
+                />
+              </TableCell>
+              <TableCell className="font-medium">{product.name}</TableCell>
+              <TableCell>{product.sku}</TableCell>
+              <TableCell>${parseFloat(product.price).toLocaleString()}</TableCell>
+              <TableCell>
+                <Badge variant={product.quantity <= product.quantity_alert ? "destructive" : "outline"}>
+                  {product.quantity}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
+                  {product.status}
+                </Badge>
+              </TableCell>
+              <TableCell>{product.category.name}</TableCell>
+              <TableCell>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onView(product)}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onEdit(product)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => onDelete(product)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 };

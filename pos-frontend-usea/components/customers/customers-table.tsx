@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Customer } from "@/types/customer";
 import { CustomerAvatar } from "./customer-avatar";
 import { CustomerStatusBadge, CustomerTierBadge } from "./customer-status-badge";
@@ -35,7 +36,7 @@ import {
   Edit,
   Mail,
   Phone,
-  XCircle,
+  Trash2,
   Search,
   Filter,
 } from "lucide-react";
@@ -61,6 +62,14 @@ export function CustomersTable({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [tierFilter, setTierFilter] = useState<string>("all");
 
+  // Delete confirmation
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   const filteredCustomers = customers.filter((customer) => {
     const matchesSearch =
       customer.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -74,19 +83,34 @@ export function CustomersTable({
     return matchesSearch && matchesStatus && matchesTier;
   });
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  const paginatedCustomers = filteredCustomers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+
+  const formatDate = (date: string) =>
+    new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(date));
+
+  const handleDeleteClick = (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setShowDeleteConfirm(true);
   };
 
-  const formatDate = (date: string) => {
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }).format(new Date(date));
+  const handleConfirmDelete = async () => {
+    if (customerToDelete && onDelete) {
+      await onDelete(customerToDelete.id);
+    }
+    setShowDeleteConfirm(false);
+    setCustomerToDelete(null);
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
   };
 
   return (
@@ -98,12 +122,15 @@ export function CustomersTable({
           <Input
             placeholder="Search customers by name, email, or phone..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // Reset page on search
+            }}
             className="pl-10"
           />
         </div>
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setCurrentPage(1); }}>
           <SelectTrigger className="w-[180px]">
             <Filter className="h-4 w-4 mr-2" />
             <SelectValue placeholder="Status" />
@@ -115,7 +142,7 @@ export function CustomersTable({
           </SelectContent>
         </Select>
 
-        <Select value={tierFilter} onValueChange={setTierFilter}>
+        <Select value={tierFilter} onValueChange={(value) => { setTierFilter(value); setCurrentPage(1); }}>
           <SelectTrigger className="w-[180px]">
             <Filter className="h-4 w-4 mr-2" />
             <SelectValue placeholder="Tier" />
@@ -150,14 +177,14 @@ export function CustomersTable({
                   Loading...
                 </TableCell>
               </TableRow>
-            ) : filteredCustomers.length === 0 ? (
+            ) : paginatedCustomers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                   No customers found matching your criteria.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredCustomers.map((customer) => (
+              paginatedCustomers.map((customer) => (
                 <TableRow key={customer.id} className="cursor-pointer hover:bg-muted/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -226,31 +253,27 @@ export function CustomersTable({
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => onView(customer)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
+                          <Eye className="h-4 w-4 mr-2" /> View Details
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onEdit(customer)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Customer
+                          <Edit className="h-4 w-4 mr-2" /> Edit Customer
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => onContact(customer)}>
-                          <Mail className="h-4 w-4 mr-2" />
-                          Send Email
+                          <Mail className="h-4 w-4 mr-2" /> Send Email
                         </DropdownMenuItem>
                         {customer.phone && (
                           <DropdownMenuItem onClick={() => onContact(customer)}>
-                            <Phone className="h-4 w-4 mr-2" />
-                            Call Customer
+                            <Phone className="h-4 w-4 mr-2" /> Call Customer
                           </DropdownMenuItem>
                         )}
                         {onDelete && (
                           <>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => onDelete(customer.id)}>
-                              <XCircle className="h-4 w-4 mr-2" />
-                              Delete Customer
-                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onDelete && onDelete(customer.id)}>
+  <Trash2 className="h-4 w-4 mr-2" /> Delete Customer
+</DropdownMenuItem>
+
                           </>
                         )}
                       </DropdownMenuContent>
@@ -262,6 +285,52 @@ export function CustomersTable({
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-2">
+          <Button size="sm" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
+            Previous
+          </Button>
+          {Array.from({ length: totalPages }, (_, i) => (
+            <Button
+              key={i}
+              size="sm"
+              variant={currentPage === i + 1 ? "default" : "outline"}
+              onClick={() => handlePageChange(i + 1)}
+            >
+              {i + 1}
+            </Button>
+          ))}
+          <Button size="sm" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>
+            Next
+          </Button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+          </DialogHeader>
+          <p className="mb-4">
+            Are you sure you want to delete{" "}
+            <strong>
+              {customerToDelete?.first_name} {customerToDelete?.last_name}
+            </strong>
+            ? This action cannot be undone.
+          </p>
+          <DialogFooter className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4" /> Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

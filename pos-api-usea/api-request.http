@@ -14,7 +14,7 @@ Accept: application/json
 GET http://localhost:8000/api/customers
 Accept: application/json
 ###
-GET http://localhost:8000/api/customers/1/stats
+GET http://localhost:8000/api/customers/stats
 Accept: application/json
 ###
 GET http://localhost:8000/api/customers/1/addresses

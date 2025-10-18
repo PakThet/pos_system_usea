@@ -14,6 +14,14 @@ interface CustomersStatsProps {
   stats: CustomerStats;
 }
 
+const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+  
 export function CustomersStats({ stats }: CustomersStatsProps) {
   const statCards = [
     {
@@ -34,7 +42,7 @@ export function CustomersStats({ stats }: CustomersStatsProps) {
     },
     {
       title: "New This Month",
-      value: stats.newThisMonth,
+      value: stats.new_this_month,
       icon: TrendingUp,
       color: "text-purple-500",
       bgColor: "bg-purple-50",
@@ -58,7 +66,7 @@ export function CustomersStats({ stats }: CustomersStatsProps) {
     },
     {
       title: "Avg Order Value",
-      value: `$${stats.averageOrderValue}`,
+      value: formatCurrency(stats.average_order_value),
       icon: DollarSign,
       color: "text-emerald-500",
       bgColor: "bg-emerald-50",

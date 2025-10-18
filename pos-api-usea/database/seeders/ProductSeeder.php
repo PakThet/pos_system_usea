@@ -4,11 +4,23 @@ namespace Database\Seeders;
 
 use App\Models\Product;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class ProductSeeder extends Seeder
 {
     public function run(): void
     {
+        // ✅ Path to your local images folder (put your images here)
+        $sourcePath = public_path('images/products');
+        $destinationPath = storage_path('app/public/products');
+
+        // Ensure the destination directory exists
+        if (!File::exists($destinationPath)) {
+            File::makeDirectory($destinationPath, 0755, true);
+        }
+
         $products = [
             // Smartphones
             [
@@ -24,7 +36,7 @@ class ProductSeeder extends Seeder
                 'tax_rate' => 16.0,
                 'quantity' => 25,
                 'quantity_alert' => 5,
-                'image' => 'products/iphone15-pro-max.jpg',
+                'image' => '11.jpg',
                 'status' => 'active',
             ],
             [
@@ -40,7 +52,7 @@ class ProductSeeder extends Seeder
                 'tax_rate' => 16.0,
                 'quantity' => 18,
                 'quantity_alert' => 5,
-                'image' => 'products/galaxy-s24-ultra.jpg',
+                'image' => '11.jpg',
                 'status' => 'active',
             ],
             [
@@ -56,213 +68,43 @@ class ProductSeeder extends Seeder
                 'tax_rate' => 16.0,
                 'quantity' => 12,
                 'quantity_alert' => 3,
-                'image' => 'products/pixel-8-pro.jpg',
-                'status' => 'active',
-            ],
-            [
-                'store_id' => 1,
-                'category_id' => 1,
-                'name' => 'OnePlus 12',
-                'description' => 'Flagship killer with Snapdragon 8 Gen 3 and Hasselblad camera',
-                'sku' => 'OP12-256GB',
-                'slug' => 'oneplus-12',
-                'barcode' => '694236851234',
-                'price' => 89999.00,
-                'cost_price' => 75000.00,
-                'tax_rate' => 16.0,
-                'quantity' => 15,
-                'quantity_alert' => 4,
-                'image' => 'products/oneplus-12.jpg',
-                'status' => 'active',
-            ],
-
-            // Laptops
-            [
-                'store_id' => 1,
-                'category_id' => 2,
-                'name' => 'MacBook Pro 16-inch M3',
-                'description' => 'Professional laptop with M3 chip for creative work',
-                'sku' => 'MBP16-M3-1TB',
-                'slug' => 'macbook-pro-16-m3',
-                'barcode' => '194253774567',
-                'price' => 349999.00,
-                'cost_price' => 295000.00,
-                'tax_rate' => 16.0,
-                'quantity' => 8,
-                'quantity_alert' => 2,
-                'image' => 'products/macbook-pro-16.jpg',
-                'status' => 'active',
-            ],
-            [
-                'store_id' => 1,
-                'category_id' => 2,
-                'name' => 'Dell XPS 15',
-                'description' => 'Premium Windows laptop with OLED display',
-                'sku' => 'DXP15-1TB',
-                'slug' => 'dell-xps-15',
-                'barcode' => '884116367890',
-                'price' => 189999.00,
-                'cost_price' => 155000.00,
-                'tax_rate' => 16.0,
-                'quantity' => 10,
-                'quantity_alert' => 3,
-                'image' => 'products/dell-xps-15.jpg',
-                'status' => 'active',
-            ],
-            [
-                'store_id' => 1,
-                'category_id' => 2,
-                'name' => 'HP Spectre x360',
-                'description' => '2-in-1 convertible laptop with premium design',
-                'sku' => 'HPSX360-512GB',
-                'slug' => 'hp-spectre-x360',
-                'barcode' => '190780489012',
-                'price' => 149999.00,
-                'cost_price' => 125000.00,
-                'tax_rate' => 16.0,
-                'quantity' => 7,
-                'quantity_alert' => 2,
-                'image' => 'products/hp-spectre-x360.jpg',
-                'status' => 'active',
-            ],
-
-            // Audio Devices
-            [
-                'store_id' => 1,
-                'category_id' => 3,
-                'name' => 'Sony WH-1000XM5',
-                'description' => 'Industry-leading noise canceling wireless headphones',
-                'sku' => 'SONY-XM5-BLK',
-                'slug' => 'sony-wh-1000xm5',
-                'barcode' => '027242871234',
-                'price' => 34999.00,
-                'cost_price' => 28000.00,
-                'tax_rate' => 16.0,
-                'quantity' => 20,
-                'quantity_alert' => 5,
-                'image' => 'products/sony-xm5.jpg',
-                'status' => 'active',
-            ],
-            [
-                'store_id' => 1,
-                'category_id' => 3,
-                'name' => 'Apple AirPods Pro (2nd Gen)',
-                'description' => 'Wireless earbuds with active noise cancellation',
-                'sku' => 'APP2-WHITE',
-                'slug' => 'airpods-pro-2',
-                'barcode' => '194253074321',
-                'price' => 29999.00,
-                'cost_price' => 24000.00,
-                'tax_rate' => 16.0,
-                'quantity' => 30,
-                'quantity_alert' => 8,
-                'image' => 'products/airpods-pro-2.jpg',
-                'status' => 'active',
-            ],
-            [
-                'store_id' => 1,
-                'category_id' => 3,
-                'name' => 'JBL Flip 6',
-                'description' => 'Portable Bluetooth speaker with premium sound',
-                'sku' => 'JBL-FLIP6-BLK',
-                'slug' => 'jbl-flip-6',
-                'barcode' => '050036834567',
-                'price' => 12999.00,
-                'cost_price' => 9500.00,
-                'tax_rate' => 16.0,
-                'quantity' => 25,
-                'quantity_alert' => 6,
-                'image' => 'products/jbl-flip6.jpg',
-                'status' => 'active',
-            ],
-
-            // Accessories
-            [
-                'store_id' => 1,
-                'category_id' => 4,
-                'name' => 'Apple 20W USB-C Power Adapter',
-                'description' => 'Fast charging power adapter for iPhone and iPad',
-                'sku' => 'APL-20W-ADPT',
-                'slug' => 'apple-20w-usb-c-adapter',
-                'barcode' => '194253018765',
-                'price' => 2999.00,
-                'cost_price' => 1800.00,
-                'tax_rate' => 16.0,
-                'quantity' => 50,
-                'quantity_alert' => 10,
-                'image' => 'products/apple-20w-adapter.jpg',
-                'status' => 'active',
-            ],
-            [
-                'store_id' => 1,
-                'category_id' => 4,
-                'name' => 'Samsung 45W Super Fast Charging',
-                'description' => 'Super fast charging adapter for Samsung devices',
-                'sku' => 'SAM-45W-CHRG',
-                'slug' => 'samsung-45w-charger',
-                'barcode' => '887276258901',
-                'price' => 3499.00,
-                'cost_price' => 2200.00,
-                'tax_rate' => 16.0,
-                'quantity' => 35,
-                'quantity_alert' => 8,
-                'image' => 'products/samsung-45w-charger.jpg',
-                'status' => 'active',
-            ],
-            [
-                'store_id' => 1,
-                'category_id' => 4,
-                'name' => 'Spigen Tough Armor Case for iPhone 15',
-                'description' => 'Military-grade protection case with kickstand',
-                'sku' => 'SPG-TA-IP15',
-                'slug' => 'spigen-tough-armor-iphone15',
-                'barcode' => '848276034567',
-                'price' => 2499.00,
-                'cost_price' => 1500.00,
-                'tax_rate' => 16.0,
-                'quantity' => 40,
-                'quantity_alert' => 10,
-                'image' => 'products/spigen-tough-armor.jpg',
-                'status' => 'active',
-            ],
-
-            // Low stock items for testing
-            [
-                'store_id' => 1,
-                'category_id' => 5,
-                'name' => 'iPad Air 5th Gen',
-                'description' => 'Powerful tablet with M1 chip and Liquid Retina display',
-                'sku' => 'IPADAIR5-64GB',
-                'slug' => 'ipad-air-5',
-                'barcode' => '194253773456',
-                'price' => 79999.00,
-                'cost_price' => 65000.00,
-                'tax_rate' => 16.0,
-                'quantity' => 3,
-                'quantity_alert' => 5,
-                'image' => 'products/ipad-air-5.jpg',
-                'status' => 'active',
-            ],
-            [
-                'store_id' => 1,
-                'category_id' => 6,
-                'name' => 'Apple Watch Series 9',
-                'description' => 'Advanced smartwatch with health monitoring features',
-                'sku' => 'AWS9-45MM-GPS',
-                'slug' => 'apple-watch-series-9',
-                'barcode' => '194253072345',
-                'price' => 59999.00,
-                'cost_price' => 48000.00,
-                'tax_rate' => 16.0,
-                'quantity' => 2,
-                'quantity_alert' => 3,
-                'image' => 'products/apple-watch-s9.jpg',
+                'image' => '11.jpg',
                 'status' => 'active',
             ],
         ];
 
         foreach ($products as $product) {
-            Product::create($product);
+            $imageName = $product['image'];
+
+            // ✅ Copy image to storage/app/public/products if it exists
+            $sourceImage = $sourcePath . '/' . $imageName;
+            $destinationImage = $destinationPath . '/' . $imageName;
+
+            if (File::exists($sourceImage)) {
+                File::copy($sourceImage, $destinationImage);
+            } else {
+                $this->command->warn("⚠️ Image not found: {$sourceImage}");
+            }
+
+            // ✅ Save product to database with correct path
+            Product::create([
+                'store_id' => $product['store_id'],
+                'category_id' => $product['category_id'],
+                'name' => $product['name'],
+                'description' => $product['description'],
+                'sku' => $product['sku'],
+                'slug' => $product['slug'] ?? Str::slug($product['name']),
+                'barcode' => $product['barcode'],
+                'price' => $product['price'],
+                'cost_price' => $product['cost_price'],
+                'tax_rate' => $product['tax_rate'],
+                'quantity' => $product['quantity'],
+                'quantity_alert' => $product['quantity_alert'],
+                'image' => 'products/' . $imageName,
+                'status' => $product['status'],
+            ]);
         }
+
+        $this->command->info('✅ Product seeding completed successfully with images.');
     }
 }

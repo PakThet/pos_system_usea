@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -41,41 +42,49 @@ import {
 
 interface OrdersTableProps {
   orders: Order[];
-  onView: (order: Order) => void;
   onEdit: (order: Order) => void;
-  onUpdateStatus: (orderId: string, status: OrderStatus) => void;
+  onUpdateStatus: (orderId: number, status: OrderStatus) => void;
 }
 
-export function OrdersTable({ orders, onView, onEdit, onUpdateStatus }: OrdersTableProps) {
+export function OrdersTable({ orders, onEdit, onUpdateStatus }: OrdersTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
+  const router = useRouter();
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch = 
-      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${order.customer.first_name} ${order.customer.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer.email.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
-    const matchesPayment = paymentFilter === "all" || order.paymentStatus === paymentFilter;
+    const matchesPayment = paymentFilter === "all" || order.payment_status === paymentFilter;
 
     return matchesSearch && matchesStatus && matchesPayment;
   });
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: string) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(amount);
+    }).format(parseFloat(amount));
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
-    }).format(date);
+    }).format(new Date(dateString));
+  };
+
+  const getCustomerName = (customer: Order['customer']) => {
+    return `${customer.first_name} ${customer.last_name}`;
+  };
+
+  const handleViewOrder = (order: Order) => {
+    router.push(`/admin/orders/${order.id}`);
   };
 
   return (
@@ -137,10 +146,14 @@ export function OrdersTable({ orders, onView, onEdit, onUpdateStatus }: OrdersTa
           </TableHeader>
           <TableBody>
             {filteredOrders.map((order) => (
-              <TableRow key={order.id} className="cursor-pointer hover:bg-muted/50">
+              <TableRow 
+                key={order.id} 
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => handleViewOrder(order)}
+              >
                 <TableCell className="font-medium">
                   <div>
-                    <div className="font-semibold">{order.orderNumber}</div>
+                    <div className="font-semibold">{order.order_number}</div>
                     <div className="text-sm text-muted-foreground">
                       {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                     </div>
@@ -148,21 +161,21 @@ export function OrdersTable({ orders, onView, onEdit, onUpdateStatus }: OrdersTa
                 </TableCell>
                 <TableCell>
                   <div>
-                    <div className="font-medium">{order.customer.name}</div>
+                    <div className="font-medium">{getCustomerName(order.customer)}</div>
                     <div className="text-sm text-muted-foreground">{order.customer.email}</div>
                   </div>
                 </TableCell>
-                <TableCell>{formatDate(order.createdAt)}</TableCell>
+                <TableCell>{formatDate(order.created_at)}</TableCell>
                 <TableCell>
                   <OrderStatusBadge status={order.status} size="sm" />
                 </TableCell>
                 <TableCell>
-                  <PaymentStatusBadge status={order.paymentStatus} size="sm" />
+                  <PaymentStatusBadge status={order.payment_status} size="sm" />
                 </TableCell>
                 <TableCell className="text-right font-semibold">
-                  {formatCurrency(order.totalAmount)}
+                  {formatCurrency(order.total_amount)}
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm">
@@ -171,7 +184,7 @@ export function OrdersTable({ orders, onView, onEdit, onUpdateStatus }: OrdersTa
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => onView(order)}>
+                      <DropdownMenuItem onClick={() => handleViewOrder(order)}>
                         <Eye className="h-4 w-4 mr-2" />
                         View Details
                       </DropdownMenuItem>
@@ -192,6 +205,10 @@ export function OrdersTable({ orders, onView, onEdit, onUpdateStatus }: OrdersTa
                       <DropdownMenuItem onClick={() => onUpdateStatus(order.id, 'shipped')}>
                         <Truck className="h-4 w-4 mr-2" />
                         Mark Shipped
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onUpdateStatus(order.id, 'delivered')}>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Mark Delivered
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

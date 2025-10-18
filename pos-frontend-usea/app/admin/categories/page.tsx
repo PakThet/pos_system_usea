@@ -10,37 +10,6 @@ import { CategoriesGrid } from "@/components/categories/categories-grid";
 import { CategoryForm } from "@/components/categories/category-form";
 import { categoryApi } from "@/services/categoryApi";
 
-const USE_API = process.env.NEXT_PUBLIC_USE_API === "true";
-
-const mockCategories: Category[] = [
-  {
-    id: "1",
-    name: "Electronics",
-    slug: "electronics",
-    desc: "Electronic devices and accessories",
-    status: "active",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    name: "Clothing",
-    slug: "clothing",
-    desc: "Fashion and apparel",
-    status: "active",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "3",
-    name: "Books",
-    slug: "books",
-    desc: "Various books and literature",
-    status: "inactive",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
 
 // Transform API category to app category
 const transformApiCategory = (apiCategory: any): Category => ({
@@ -62,13 +31,6 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      if (!USE_API) {
-        const filtered = mockCategories.filter((category) =>
-          category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          category.desc?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        setCategories(filtered);
-      } else {
         try {
           setIsLoading(true);
           const response = await categoryApi.getCategories();
@@ -95,7 +57,7 @@ export default function CategoriesPage() {
         } finally {
           setIsLoading(false);
         }
-      }
+      
     };
 
     fetchCategories();
@@ -104,18 +66,7 @@ export default function CategoriesPage() {
   const handleCreateCategory = async (data: CreateCategoryData) => {
     setIsLoading(true);
 
-    if (!USE_API) {
-      const newCategory: Category = {
-        id: Date.now().toString(),
-        ...data,
-        status: "active",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setCategories((prev) => [...prev, newCategory]);
-      setShowForm(false);
-    } else {
+    
       try {
         const response = await categoryApi.createCategory({
           name: data.name,
@@ -135,7 +86,7 @@ export default function CategoriesPage() {
         console.error("Failed to create category", err);
         alert("Failed to create category. Please try again.");
       }
-    }
+    
 
     setIsLoading(false);
   };
@@ -144,17 +95,7 @@ export default function CategoriesPage() {
     if (!editingCategory) return;
     setIsLoading(true);
 
-    if (!USE_API) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.id === editingCategory.id
-            ? { ...cat, ...data, updatedAt: new Date() }
-            : cat
-        )
-      );
-      setEditingCategory(null);
-    } else {
+    
       try {
         const response = await categoryApi.updateCategory(editingCategory.id, {
           name: data.name,
@@ -177,7 +118,7 @@ export default function CategoriesPage() {
         console.error("Failed to update category", err);
         alert("Failed to update category. Please try again.");
       }
-    }
+    
 
     setIsLoading(false);
   };
@@ -185,10 +126,7 @@ export default function CategoriesPage() {
   const handleDeleteCategory = async (category: Category) => {
     if (!confirm(`Are you sure you want to delete "${category.name}"?`)) return;
 
-    if (!USE_API) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setCategories((prev) => prev.filter((cat) => cat.id !== category.id));
-    } else {
+    
       try {
         const response = await categoryApi.deleteCategory(category.id);
         
@@ -202,7 +140,7 @@ export default function CategoriesPage() {
         console.error("Failed to delete category", err);
         alert("Failed to delete category. Please try again.");
       }
-    }
+    
   };
 
   const handleEdit = (category: Category) => {

@@ -34,8 +34,9 @@ Route::apiResource('cashiers', CashierController::class);
 Route::get('cashiers/stats', [CashierController::class, 'stats']);
 
 // Customer routes
+Route::get('/customers/stats', [CustomerController::class, 'stats']);
 Route::apiResource('customers', CustomerController::class);
-Route::get('/customers/{customer}/stats', [CustomerController::class, 'stats']);
+
 
 
 // Customer address routes
@@ -44,7 +45,6 @@ Route::apiResource('addresses', CustomerAddressController::class)->except(['inde
 
 // Product routes
 Route::apiResource('products', ProductController::class);
-// Route::get('/products/{product}/low-stock', [ProductController::class, 'lowStock']);
 
 
 // Sale routes

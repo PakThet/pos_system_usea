@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Plus, Users, RefreshCw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Download, Plus, Users, RefreshCw, Trash2 } from "lucide-react";
 import { Customer, CustomerStats, CreateCustomerData } from "@/types/customer";
 import { CustomersStats } from "@/components/customers/customers-stats";
 import { CustomersTable } from "@/components/customers/customers-table";
@@ -11,67 +12,6 @@ import { CustomerDetailsDialog } from "@/components/customers/customer-details-d
 import { CustomerForm } from "@/components/customers/customer-form";
 import { toast } from "sonner";
 import { customerApi } from "@/services/customerApi";
-
-const USE_API = process.env.NEXT_PUBLIC_USE_API === "true";
-
-// Mock data
-const mockCustomers: Customer[] = [
-  {
-    id: "1",
-    first_name: "John",
-    last_name: "Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    status: "active",
-    tier: "premium",
-    total_orders: 12,
-    total_spent: 2450.75,
-    last_order: new Date("2024-01-15").toISOString(),
-    created_at: new Date("2023-05-10").toISOString(),
-    updated_at: new Date("2024-01-15").toISOString(),
-    address: {
-      street: "123 Main Street",
-      city: "New York",
-      state: "NY",
-      zip_code: "10001",
-      country: "USA",
-    },
-  },
-  {
-    id: "2",
-    first_name: "Jane",
-    last_name: "Smith",
-    email: "jane.smith@example.com",
-    phone: "+1 (555) 987-6543",
-    status: "active",
-    tier: "vip",
-    total_orders: 28,
-    total_spent: 5890.25,
-    last_order: new Date("2024-01-14").toISOString(),
-    created_at: new Date("2022-11-20").toISOString(),
-    updated_at: new Date("2024-01-14").toISOString(),
-    notes: "Preferred customer, always buys premium products",
-    address: {
-      street: "456 Oak Avenue",
-      city: "Los Angeles",
-      state: "CA",
-      zip_code: "90210",
-      country: "USA",
-    },
-  },
-];
-
-
-const mockStats: CustomerStats = {
-  total: 156,
-  active: 142,
-  inactive: 14,
-  new_this_month: 12,
-  premium: 45,
-  vip: 22,
-  average_order_value: 1823.72,
-  tierDistribution: { standard: 89, premium: 45, vip: 22 },
-};
 
 // Transform API response to app customer
 const transformApiCustomer = (apiCustomer: any): Customer => ({
@@ -84,18 +24,20 @@ const transformApiCustomer = (apiCustomer: any): Customer => ({
   tier: apiCustomer.tier,
   total_orders: apiCustomer.total_orders || 0,
   total_spent: parseFloat(apiCustomer.total_spent) || 0,
-  last_order: apiCustomer.last_order || undefined,
+  last_order: apiCustomer.last_order_at || undefined,
   notes: apiCustomer.notes || "",
   created_at: apiCustomer.created_at,
   updated_at: apiCustomer.updated_at,
-  address:
-    apiCustomer.address?.map((a: any) => ({
-      street: a.street ?? "",
-      city: a.city ?? "",
-      state: a.state ?? "",
-      zip_code: a.zip_code ?? "",
-      country: a.country ?? "",
-    })) || [],
+  address: apiCustomer.addresses?.map((a: any) => ({
+    id: a.id.toString(),
+    street: a.street ?? "",
+    city: a.city ?? "",
+    state: a.state ?? "",
+    zip_code: a.zip_code ?? "",
+    country: a.country ?? "",
+    type: a.type ?? "both",
+    is_default: a.is_default ?? false,
+  })) || [],
 });
 
 export default function CustomersPage() {
@@ -108,6 +50,10 @@ export default function CustomersPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Delete confirmation modal
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+
   useEffect(() => {
     fetchCustomers();
     fetchStats();
@@ -116,13 +62,14 @@ export default function CustomersPage() {
   const fetchCustomers = async () => {
     try {
       setIsRefreshing(true);
-      if (!USE_API) setCustomers(mockCustomers);
-      else {
-        const response = await customerApi.getCustomers();
-        if (response.success) setCustomers(response.data.map(transformApiCustomer));
-        else toast.error("Failed to fetch customers");
+      const response = await customerApi.getCustomers();
+      if (response.success) {
+        setCustomers(response.data.map(transformApiCustomer));
+      } else {
+        toast.error("Failed to fetch customers");
       }
-    } catch {
+    } catch (error) {
+      console.error('Error fetching customers:', error);
       toast.error("Failed to fetch customers");
     } finally {
       setIsRefreshing(false);
@@ -131,13 +78,14 @@ export default function CustomersPage() {
 
   const fetchStats = async () => {
     try {
-      if (!USE_API) setStats(mockStats);
-      else {
-        const response = await customerApi.getCustomerStats();
-        if (response.success) setStats(response.data);
-        else toast.error("Failed to fetch customer statistics");
+      const response = await customerApi.getCustomerStats();
+      if (response.success) {
+        setStats(response.data);
+      } else {
+        toast.error("Failed to fetch customer statistics");
       }
-    } catch {
+    } catch (error) {
+      console.error('Error fetching stats:', error);
       toast.error("Failed to fetch customer statistics");
     }
   };
@@ -145,45 +93,17 @@ export default function CustomersPage() {
   const handleCreateCustomer = async (data: CreateCustomerData) => {
     setIsLoading(true);
     try {
-      const newCustomer: Customer = {
-        id: Date.now().toString(),
-        first_name: data.first_name,
-        last_name: data.last_name,
-        email: data.email,
-        phone: data.phone ?? "",
-        status: data.status ?? "active",
-        tier: data.tier ?? "standard",
-        total_orders: 0,
-        total_spent: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        address: data.address
-  ? {
-      street: data.address.street ?? "",
-      city: data.address.city ?? "",
-      state: data.address.state ?? "",
-      zip_code: data.address.zip_code ?? "",
-      country: data.address.country ?? "",
-    }
-  : customers[0].address,
-
-      };
-
-      if (!USE_API) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        setCustomers((prev) => [...prev, newCustomer]);
+      const response = await customerApi.createCustomer(data);
+      if (response.success) {
+        setCustomers((prev) => [...prev, transformApiCustomer(response.data)]);
+        fetchStats();
         setShowForm(false);
         toast.success("Customer created successfully");
       } else {
-        const response = await customerApi.createCustomer(data);
-        if (response.success) {
-          setCustomers((prev) => [...prev, transformApiCustomer(response.data)]);
-          fetchStats();
-          setShowForm(false);
-          toast.success("Customer created successfully");
-        } else toast.error("Failed to create customer");
+        toast.error(response.message || "Failed to create customer");
       }
-    } catch {
+    } catch (error) {
+      console.error('Error creating customer:', error);
       toast.error("Failed to create customer");
     } finally {
       setIsLoading(false);
@@ -194,84 +114,64 @@ export default function CustomersPage() {
     if (!editingCustomer) return;
     setIsLoading(true);
     try {
-      if (!USE_API) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await customerApi.updateCustomer(editingCustomer.id, data);
+      if (response.success) {
+        const apiCustomer = transformApiCustomer(response.data);
         setCustomers((prev) =>
-          prev.map((customer) =>
-            customer.id === editingCustomer.id
-              ? {
-                  ...customer,
-                  first_name: data.first_name,
-                  last_name: data.last_name,
-                  email: data.email,
-                  phone: data.phone ?? "",
-                  status: data.status ?? customer.status,
-                  tier: data.tier ?? customer.tier,
-                  notes: data.notes ?? customer.notes ?? "",
-                  address: data.address
-  ? {
-      street: data.address.street ?? "",
-      city: data.address.city ?? "",
-      state: data.address.state ?? "",
-      zip_code: data.address.zip_code ?? "",
-      country: data.address.country ?? "",
-    }
-  : customer.address,
-
-                  updated_at: new Date().toISOString(),
-                }
-              : customer
-          )
+          prev.map((c) => (c.id === editingCustomer.id ? apiCustomer : c))
         );
         setEditingCustomer(null);
         setShowForm(false);
+        fetchStats();
         toast.success("Customer updated successfully");
       } else {
-        const response = await customerApi.updateCustomer(editingCustomer.id, data);
-        if (response.success) {
-          const apiCustomer = transformApiCustomer(response.data);
-          setCustomers((prev) =>
-            prev.map((c) => (c.id === editingCustomer.id ? apiCustomer : c))
-          );
-          setEditingCustomer(null);
-          setShowForm(false);
-          fetchStats();
-          toast.success("Customer updated successfully");
-        } else toast.error("Failed to update customer");
+        toast.error(response.message || "Failed to update customer");
       }
-    } catch {
+    } catch (error) {
+      console.error('Error updating customer:', error);
       toast.error("Failed to update customer");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDeleteCustomer = async (customerId: string) => {
-    try {
-      const customerToDelete = customers.find((c) => c.id === customerId);
-      if (!customerToDelete) return;
+  // Show confirmation modal before delete
+const confirmDeleteCustomer = async (customerId: string) => {
+    const customer = customers.find(c => c.id === customerId);
+    if (!customer) return;
+    setCustomerToDelete(customer);
+    setShowDeleteConfirm(true);
+  };
 
-      if (!USE_API) {
-        setCustomers((prev) => prev.filter((c) => c.id !== customerId));
+
+  const handleDeleteCustomer = async () => {
+    if (!customerToDelete) return;
+    setShowDeleteConfirm(false);
+
+    try {
+      const response = await customerApi.deleteCustomer(customerToDelete.id);
+      if (response.success) {
+        setCustomers((prev) => prev.filter((c) => c.id !== customerToDelete.id));
+        fetchStats();
         toast.success("Customer deleted successfully");
       } else {
-        const response = await customerApi.deleteCustomer(customerId);
-        if (response.success) {
-          setCustomers((prev) => prev.filter((c) => c.id !== customerId));
-          fetchStats();
-          toast.success("Customer deleted successfully");
-        } else toast.error("Failed to delete customer");
+        toast.error(response.message || "Failed to delete customer");
       }
-    } catch {
+    } catch (error) {
+      console.error('Error deleting customer:', error);
       toast.error("Failed to delete customer");
+    } finally {
+      setCustomerToDelete(null);
     }
   };
 
   const handleExportCustomers = () => toast.info("Export functionality coming soon");
+
   const handleCancelForm = () => {
     setShowForm(false);
     setEditingCustomer(null);
   };
+
   const handleRefresh = () => {
     fetchCustomers();
     fetchStats();
@@ -324,7 +224,7 @@ export default function CustomersPage() {
             }}
             onEdit={handleEditCustomer}
             onContact={handleContactCustomer}
-            onDelete={handleDeleteCustomer}
+            onDelete={confirmDeleteCustomer}
             isLoading={isRefreshing}
           />
         </CardContent>
@@ -352,6 +252,30 @@ export default function CustomersPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+          </DialogHeader>
+          <p className="mb-4">
+            Are you sure you want to delete{" "}
+            <strong>
+              {customerToDelete?.first_name} {customerToDelete?.last_name}
+            </strong>
+            ? This action cannot be undone.
+          </p>
+          <DialogFooter className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteCustomer} className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4" /> Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
