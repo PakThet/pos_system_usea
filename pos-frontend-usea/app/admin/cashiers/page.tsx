@@ -83,56 +83,6 @@ export default function CashiersPage() {
     }
   };
 
-
-//   const fetchCashiers = async () => {
-//   try {
-//     setIsRefreshing(true);
-
-//     if (!USE_API) {
-//       setCashiers(mockCashiers);
-//     } else {
-//       const response = await cashierApi.getCashiers();
-
-//       if (response.success && Array.isArray(response.data)) {
-//         const transformedCashiers = response.data.map(transformApiCashier);
-//         setCashiers(transformedCashiers);
-//       } else if (response.success && response.data && Array.isArray(response.data.cashiers)) {
-//         // If API wraps cashiers in an object
-//         const transformedCashiers = response.data.cashiers.map(transformApiCashier);
-//         setCashiers(transformedCashiers);
-//       } else {
-//         console.error('Failed to fetch cashiers: data is not an array', response.data);
-//         toast.error('Failed to fetch cashiers: invalid data format');
-//       }
-//     }
-//   } catch (error) {
-//     console.error('Error fetching cashiers:', error);
-//     toast.error('Failed to fetch cashiers');
-//   } finally {
-//     setIsRefreshing(false);
-//   }
-// };
-
-
-  // const fetchStats = async () => {
-  //   try {
-  //     if (!USE_API) {
-  //       setStats(mockStats);
-  //     } else {
-  //       const response = await cashierApi.getCashierStats();
-  //       if (response.success) {
-  //         setStats(response.data);
-  //       } else {
-  //         console.error('Failed to fetch stats:', response.message);
-  //         toast.error('Failed to fetch cashier statistics');
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching stats:', error);
-  //     toast.error('Failed to fetch cashier statistics');
-  //   }
-  // };
-
   const handleViewCashier = (cashier: Cashier) => {
     setSelectedCashier(cashier);
     setShowDetails(true);

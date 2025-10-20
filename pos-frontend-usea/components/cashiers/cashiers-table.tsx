@@ -41,6 +41,7 @@ import {
   Clock,
   DollarSign
 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface CashiersTableProps {
   cashiers: Cashier[];
@@ -50,6 +51,41 @@ interface CashiersTableProps {
   onStatusChange: (cashierId: string, status: Cashier['status']) => Promise<void>;
   onRecordLogin: (cashierId: string) => Promise<void>;
   isLoading?: boolean;
+}
+
+// Delete Confirmation Dialog
+function DeleteConfirmationDialog({
+  open,
+  onClose,
+  onConfirm,
+  title = "Confirm Delete",
+  description = "Are you sure you want to delete this item?",
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title?: string;
+  description?: string;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <Card className="w-[400px]">
+        <CardHeader className="flex justify-between items-center">
+          <CardTitle>{title}</CardTitle>
+          <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p>{description}</p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button variant="destructive" onClick={() => { onConfirm(); onClose(); }}>Delete</Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export function CashiersTable({
@@ -65,6 +101,9 @@ export function CashiersTable({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [shiftFilter, setShiftFilter] = useState<string>("all");
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [cashierToDelete, setCashierToDelete] = useState<Cashier | null>(null);
 
   const filteredCashiers = cashiers.filter((cashier) => {
     const matchesSearch =
@@ -162,9 +201,7 @@ export function CashiersTable({
                   <div className="flex items-center gap-3">
                     <CashierAvatar cashier={cashier} />
                     <div>
-                      <div className="font-semibold">
-                        {cashier.first_name} {cashier.last_name}
-                      </div>
+                      <div className="font-semibold">{cashier.first_name} {cashier.last_name}</div>
                       <div className="text-sm text-muted-foreground">
                         ${cashier.hourly_rate}/hr
                       </div>
@@ -215,21 +252,22 @@ export function CashiersTable({
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => onView(cashier)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
+                        <Eye className="h-4 w-4 mr-2" /> View Details
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onEdit(cashier)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit Cashier
+                        <Edit className="h-4 w-4 mr-2" /> Edit Cashier
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onRecordLogin(cashier.id)}>
-                        <Clock className="h-4 w-4 mr-2" />
-                        Record Login
+                        <Clock className="h-4 w-4 mr-2" /> Record Login
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => onDelete(cashier.id)}>
-                        <DollarSign className="h-4 w-4 mr-2" />
-                        Delete Cashier
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setCashierToDelete(cashier);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <DollarSign className="h-4 w-4 mr-2" /> Delete Cashier
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -245,6 +283,20 @@ export function CashiersTable({
           </div>
         )}
       </div>
+
+      {/* Delete Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={async () => {
+          if (cashierToDelete) {
+            await onDelete(cashierToDelete.id);
+            setCashierToDelete(null);
+          }
+        }}
+        title="Delete Cashier"
+        description={`Are you sure you want to delete cashier ${cashierToDelete?.first_name} ${cashierToDelete?.last_name}?`}
+      />
     </div>
   );
 }

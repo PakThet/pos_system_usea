@@ -17,6 +17,7 @@ export interface Cashier {
   permissions: string[];
   created_at: string;
   updated_at: string;
+  store_id?: string; 
 }
 
 export interface CreateCashierData {

@@ -1,59 +1,32 @@
-export interface Product {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  sku: string;
-  barcode: string;
-  category: string;
-  stock: number;
-  image?: string;
-  taxRate: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { Cashier } from "./cashier";
+import { Customer } from "./customer";
+import { Product } from "./product";
 
+
+// types/pos.ts
 export interface CartItem {
-  id: string;
+  id: number;
   product: Product;
   quantity: number;
   subtotal: number;
-  discount: number;
   tax: number;
+  discount: number;
   total: number;
   notes?: string;
 }
 
-export interface Customer {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  loyaltyPoints: number;
+export interface PaymentInfo {
+  method: 'card' | 'cash' | 'mobile' | 'credit';
+  amount: number;
+  change?: number;
+  reference?: string;
 }
 
-export interface PaymentMethod {
-  id: string;
-  type: 'cash' | 'card' | 'mobile' | 'credit';
-  name: string;
-  icon: string;
-}
-
-export interface Transaction {
-  id: string;
-  items: CartItem[];
-  subtotal: number;
-  tax: number;
+export interface POSState {
+  cart: CartItem[];
+  customer: Customer | null;
+  cashier: Cashier | null;
+  payment: PaymentInfo | null;
   discount: number;
-  total: number;
-  paymentMethod: PaymentMethod;
-  customer?: Customer;
-  cashier: {
-    id: string;
-    name: string;
-  };
-  status: 'pending' | 'completed' | 'cancelled' | 'refunded';
-  createdAt: Date;
-  notes?: string;
+  tax: number;
 }
