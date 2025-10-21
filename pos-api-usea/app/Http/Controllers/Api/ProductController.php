@@ -13,31 +13,72 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        try {
-            $products = Product::with(['store', 'category'])->get();
+    public function index(Request $request)
+{
+    try {
+        $query = Product::with(['store', 'category']);
 
-            // Convert image path to full URL
-            $products->transform(function ($product) {
-                if ($product->image) {
-                    $product->image = $this->getImageUrl($product->image);
-                }
-                return $product;
+        // Filters
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%")
+                  ->orWhere('barcode', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
             });
-
-            return response()->json([
-                "success" => true,
-                "message" => "Products fetched successfully",
-                "data" => $products,
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
         }
+
+        if ($request->has('month') && $request->has('year')) {
+    $month = $request->input('month');
+    $year = $request->input('year');
+    $query->whereYear('created_at', $year)
+          ->whereMonth('created_at', $month);
+}
+
+
+        if ($request->has('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->has('category_id')) {
+            $query->where('category_id', $request->input('category_id'));
+        }
+
+        if ($request->has('store_id')) {
+            $query->where('store_id', $request->input('store_id'));
+        }
+
+        // Pagination
+        $perPage = $request->input('per_page', 12);
+        $products = $query->paginate($perPage);
+
+        // Convert image paths to full URLs
+        $products->getCollection()->transform(function ($product) {
+            if ($product->image) {
+                $product->image = $this->getImageUrl($product->image);
+            }
+            return $product;
+        });
+
+        return response()->json([
+            "success" => true,
+            "message" => "Products fetched successfully",
+            "data" => $products->items(),
+            "meta" => [
+                "total" => $products->total(),
+                "last_page" => $products->lastPage(),
+                "current_page" => $products->currentPage(),
+            ],
+        ]);
+    } catch (Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
     /**
      * Store a newly created resource in storage.
@@ -126,9 +167,9 @@ class ProductController extends Controller
                 'category_id'    => 'sometimes|exists:categories,id',
                 'name'           => 'sometimes|string|max:255',
                 'description'    => 'nullable|string',
-                'sku'            => 'sometimes|string|max:100|unique:products,sku,' . $product->id,
-                'slug'           => 'sometimes|string|max:150|unique:products,slug,' . $product->id,
-                'barcode'        => 'sometimes|string|max:150|unique:products,barcode,' . $product->id,
+                'sku' => 'sometimes|string|max:100|unique:products,sku,' . $product->id . ',id',
+                'slug' => 'sometimes|string|max:150|unique:products,slug,' . $product->id . ',id',
+                'barcode' => 'sometimes|string|max:150|unique:products,barcode,' . $product->id . ',id',
                 'price'          => 'sometimes|numeric|min:0',
                 'cost_price'     => 'nullable|numeric|min:0',
                 'tax_rate'       => 'sometimes|numeric|min:0|max:100',

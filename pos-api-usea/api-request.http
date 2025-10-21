@@ -24,7 +24,7 @@ GET http://localhost:8000/api/sales/stats
 Accept: application/json
 Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
 ###
-GET http://localhost:8000/api/sales
+GET http://localhost:8000/api/stores
 Accept: application/json
 Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
 ###
@@ -41,7 +41,7 @@ GET http://localhost:8000/api/customers
 Accept: application/json
 Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
 ###
-GET http://localhost:8000/api/orders
+GET http://localhost:8000/api/sales
 Accept: application/json
 Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
 ###

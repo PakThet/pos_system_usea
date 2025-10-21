@@ -8,27 +8,26 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
-export const Pagination: React.FC<PaginationProps> = ({
-  currentPage,
-  totalPages,
-  onPageChange,
-}) => {
-  const pages = [];
-  const maxVisiblePages = 5;
-
-  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-  if (endPage - startPage + 1 < maxVisiblePages) {
-    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-  }
-
-  for (let i = startPage; i <= endPage; i++) {
-    pages.push(i);
-  }
+export function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+  
+  // Show limited pages with ellipsis
+  const getVisiblePages = () => {
+    if (totalPages <= 7) return pages;
+    
+    if (currentPage <= 4) {
+      return [...pages.slice(0, 5), '...', totalPages];
+    }
+    
+    if (currentPage >= totalPages - 3) {
+      return [1, '...', ...pages.slice(totalPages - 5)];
+    }
+    
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+  };
 
   return (
-    <div className="flex items-center justify-center space-x-2 py-4">
+    <div className="flex justify-center items-center space-x-2 mt-8">
       <Button
         variant="outline"
         size="sm"
@@ -38,12 +37,13 @@ export const Pagination: React.FC<PaginationProps> = ({
         <ChevronLeft className="h-4 w-4" />
       </Button>
       
-      {pages.map((page) => (
+      {getVisiblePages().map((page, index) => (
         <Button
-          key={page}
-          variant={currentPage === page ? "default" : "outline"}
+          key={index}
+          variant={page === currentPage ? "default" : "outline"}
           size="sm"
-          onClick={() => onPageChange(page)}
+          onClick={() => typeof page === 'number' && onPageChange(page)}
+          disabled={typeof page !== 'number'}
         >
           {page}
         </Button>
@@ -59,4 +59,4 @@ export const Pagination: React.FC<PaginationProps> = ({
       </Button>
     </div>
   );
-};
+}

@@ -1,110 +1,60 @@
-'use client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from 'react';
 import { Input } from '@/components/ui/input';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { FilterIcon, SearchIcon, XIcon } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Search, Filter, Plus } from 'lucide-react';
 
-interface Props {
-  searchTerm: string;
-  setSearchTerm: (value: string) => void;
-  filters: { cate: string; inStock: string };
-  setFilters: React.Dispatch<React.SetStateAction<{ cate: string; inStock: string }>>;
-  resetFilters: () => void;
-  categories: string[]; // 👈 dynamic from API
+interface ProductFiltersProps {
+  search: string;
+  onSearchChange: (value: string) => void;
+  status: string;
+  onStatusChange: (value: string) => void;
+  onAddProduct: () => void;
 }
 
-export default function ProductFilters({
-  searchTerm,
-  setSearchTerm,
-  filters,
-  setFilters,
-  resetFilters,
-  categories,
-}: Props) {
+export function ProductFilters({
+  search,
+  onSearchChange,
+  status,
+  onStatusChange,
+  onAddProduct,
+}: ProductFiltersProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Filters & Search</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Search */}
-          <div className="relative flex-1">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {/* Filter Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <FilterIcon className="w-4 h-4" />
-                Category
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Select Category</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuCheckboxItem
-                checked={filters.cate === 'all'}
-                onCheckedChange={() => setFilters((prev) => ({ ...prev, cate: 'all' }))}
-              >
-                All
-              </DropdownMenuCheckboxItem>
-              {categories.map((category) => (
-                <DropdownMenuCheckboxItem
-                  key={category}
-                  checked={filters.cate === category}
-                  onCheckedChange={() => setFilters((prev) => ({ ...prev, cate: category }))}
-                >
-                  {category}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {(filters.cate !== 'all' || searchTerm) && (
-            <Button variant="outline" onClick={resetFilters} className="gap-2">
-              <XIcon className="w-4 h-4" />
-              Clear
-            </Button>
-          )}
+    <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      <div className="flex-1 flex gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+          <Input
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-10"
+          />
         </div>
-
-        {/* Active Filters */}
-        <div className="flex flex-wrap gap-2">
-          {filters.cate !== 'all' && (
-            <Badge variant="secondary" className="gap-1">
-              Category: {filters.cate}
-              <XIcon
-                className="w-3 h-3 cursor-pointer"
-                onClick={() => setFilters((p) => ({ ...p, cate: 'all' }))}
-              />
-            </Badge>
-          )}
-          {searchTerm && (
-            <Badge variant="secondary" className="gap-1">
-              Search: {searchTerm}
-              <XIcon className="w-3 h-3 cursor-pointer" onClick={() => setSearchTerm('')} />
-            </Badge>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        
+        <Select value={status} onValueChange={onStatusChange}>
+          <SelectTrigger className="w-[180px]">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <Button onClick={onAddProduct} className="sm:w-auto">
+        <Plus className="h-4 w-4 mr-2" />
+        Add Product
+      </Button>
+    </div>
   );
 }

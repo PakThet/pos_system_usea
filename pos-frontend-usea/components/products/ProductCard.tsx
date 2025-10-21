@@ -4,21 +4,19 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Product } from '@/types/product';
-import { Edit, Trash2, ShoppingCart } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
-  onAddToCart?: (product: Product) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({
+export function ProductCard({
   product,
   onEdit,
   onDelete,
-  onAddToCart,
-}) => {
+}: ProductCardProps) {
   const isLowStock = product.quantity <= product.quantity_alert;
 
   return (
@@ -27,7 +25,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="h-full flex flex-col">
+      <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
         <CardHeader className="p-4 pb-2">
           <div className="flex justify-between items-start mb-2">
             <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
@@ -81,4 +79,4 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </Card>
     </motion.div>
   );
-};
+}
