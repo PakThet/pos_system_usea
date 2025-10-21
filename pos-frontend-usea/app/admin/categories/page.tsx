@@ -1,215 +1,188 @@
-"use client";
+// app/admin/categories/page.tsx
+'use client';
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Search } from "lucide-react";
-import { Category, CreateCategoryData, UpdateCategoryData } from "@/types/category";
-import { CategoriesGrid } from "@/components/categories/categories-grid";
-import { CategoryForm } from "@/components/categories/category-form";
-import { categoryApi } from "@/services/categoryApi";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Plus, 
+  Search, 
+  Edit, 
+  Trash2, 
+  Tags,
+  MoreVertical
+} from "lucide-react";
+import { api } from '@/lib/api';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-
-// Transform API category to app category
-const transformApiCategory = (apiCategory: any): Category => ({
-  id: apiCategory.id.toString(),
-  name: apiCategory.name,
-  slug: apiCategory.slug,
-  desc: apiCategory.desc || "",
-  status: apiCategory.status,
-  createdAt: new Date(apiCategory.created_at),
-  updatedAt: new Date(apiCategory.updated_at),
-});
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  status: 'active' | 'inactive';
+  products_count?: number;
+}
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showForm, setShowForm] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const fetchCategories = async () => {
-        try {
-          setIsLoading(true);
-          const response = await categoryApi.getCategories();
-          
-          if (response.success && Array.isArray(response.data)) {
-            const transformedCategories = response.data.map(transformApiCategory);
-            
-            // Filter by search term if provided
-            const filtered = searchTerm 
-              ? transformedCategories.filter((category) =>
-                  category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  category.desc?.toLowerCase().includes(searchTerm.toLowerCase())
-                )
-              : transformedCategories;
-            
-            setCategories(filtered);
-          } else {
-            console.error("Invalid API response structure", response);
-            setCategories([]);
-          }
-        } catch (err) {
-          console.error("Failed to fetch categories", err);
-          setCategories([]);
-        } finally {
-          setIsLoading(false);
-        }
-      
-    };
+    loadCategories();
+  }, []);
 
-    fetchCategories();
-  }, [searchTerm]);
-
-  const handleCreateCategory = async (data: CreateCategoryData) => {
-    setIsLoading(true);
-
-    
-      try {
-        const response = await categoryApi.createCategory({
-          name: data.name,
-          slug: data.slug,
-          desc: data.desc
-        });
-        
-        if (response.success) {
-          const newCategory = transformApiCategory(response.data);
-          setCategories((prev) => [...prev, newCategory]);
-          setShowForm(false);
-        } else {
-          console.error("Failed to create category", response.message);
-          alert(`Failed to create category: ${response.message}`);
-        }
-      } catch (err) {
-        console.error("Failed to create category", err);
-        alert("Failed to create category. Please try again.");
-      }
-    
-
-    setIsLoading(false);
+  const loadCategories = async () => {
+    try {
+      const response = await api.get('/categories');
+      setCategories(response.data.data.data);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleUpdateCategory = async (data: UpdateCategoryData) => {
-    if (!editingCategory) return;
-    setIsLoading(true);
+  const filteredCategories = categories.filter(category =>
+    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    category.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this category?')) return;
     
-      try {
-        const response = await categoryApi.updateCategory(editingCategory.id, {
-          name: data.name,
-          slug: data.slug,
-          desc: data.desc,
-          status: data.status,
-        });
-        
-        if (response.success) {
-          const updatedCategory = transformApiCategory(response.data);
-          setCategories((prev) =>
-            prev.map((cat) => (cat.id === updatedCategory.id ? updatedCategory : cat))
-          );
-          setEditingCategory(null);
-        } else {
-          console.error("Failed to update category", response.message);
-          alert(`Failed to update category: ${response.message}`);
-        }
-      } catch (err) {
-        console.error("Failed to update category", err);
-        alert("Failed to update category. Please try again.");
-      }
-    
-
-    setIsLoading(false);
+    try {
+      await api.delete(`/categories/${id}`);
+      setCategories(categories.filter(cat => cat.id !== id));
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to delete category');
+    }
   };
 
-  const handleDeleteCategory = async (category: Category) => {
-    if (!confirm(`Are you sure you want to delete "${category.name}"?`)) return;
-
-    
-      try {
-        const response = await categoryApi.deleteCategory(category.id);
-        
-        if (response.success) {
-          setCategories((prev) => prev.filter((cat) => cat.id !== category.id));
-        } else {
-          console.error("Failed to delete category", response.message);
-          alert(`Failed to delete category: ${response.message}`);
-        }
-      } catch (err) {
-        console.error("Failed to delete category", err);
-        alert("Failed to delete category. Please try again.");
-      }
-    
-  };
-
-  const handleEdit = (category: Category) => {
-    setEditingCategory(category);
-  };
-
-  const handleCancel = () => {
-    setShowForm(false);
-    setEditingCategory(null);
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">Loading categories...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Categories</h1>
           <p className="text-muted-foreground">
-            Manage your product categories
+            Organize your products into categories
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
           Add Category
         </Button>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search categories..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search categories..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Categories Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredCategories.map((category, index) => (
+          <motion.div
+            key={category.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Card className="h-full hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg">{category.name}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge
+  variant="default"
+  className={category.status === 'active' ? 'bg-green-100 text-green-800' : ''}
+>
+  {category.status}
+</Badge>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-red-600"
+                          onClick={() => handleDelete(category.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">/{category.slug}</p>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {category.description || 'No description'}
+                </p>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Products:</span>
+                  <span className="font-semibold">{category.products_count || 0}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      )}
-
-      {/* Form Card */}
-      {(showForm || editingCategory) && (
+      {filteredCategories.length === 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle>
-              {editingCategory ? "Edit Category" : "Create New Category"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CategoryForm
-              category={editingCategory || undefined}
-              onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory}
-              onCancel={handleCancel}
-              isLoading={isLoading}
-            />
+          <CardContent className="p-8 text-center">
+            <Tags className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold">No categories found</h3>
+            <p className="text-muted-foreground mt-2">
+              {searchTerm ? 'Try adjusting your search terms' : 'Get started by creating your first category'}
+            </p>
+            <Button className="mt-4">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Category
+            </Button>
           </CardContent>
         </Card>
       )}
-
-      {/* Categories Grid */}
-      <CategoriesGrid
-        categories={categories}
-        onEdit={handleEdit}
-        onDelete={handleDeleteCategory}
-      />
     </div>
   );
 }

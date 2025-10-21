@@ -1,59 +1,53 @@
 <?php
 
-use App\Http\Controllers\Api\{
-    StoreController,
-    CategoryController,
-    CashierController,
-    CustomerController,
-    CustomerAddressController,
-    ProductController,
-    SaleController,
-    OrderController
-};
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\SaleController;
+use App\Http\Controllers\Api\StoreController;
+use App\Http\Controllers\Api\UserController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
-*/
+Route::prefix('auth')->group(function () {
+    Route::post('login', [AuthController::class, 'login']);
+    
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('logout', [AuthController::class, 'logout']);
+        Route::get('user', [AuthController::class, 'user']);
+    });
+});
 
-// Store routes
-Route::apiResource('stores', StoreController::class);
+Route::middleware('auth:sanctum')->group(function () {
+    // Users
+    Route::apiResource('users', UserController::class);
+    Route::get('users/stats', [UserController::class, 'stats']);
 
-// Category routes
-Route::apiResource('categories', CategoryController::class);
+    // Customers
+    Route::get('customers/stats', [CustomerController::class, 'stats']);
+    Route::apiResource('customers', CustomerController::class);
 
-// Cashier routes
-Route::apiResource('cashiers', CashierController::class);
-Route::get('cashiers/stats', [CashierController::class, 'stats']);
+    // Categories
+    Route::apiResource('categories', CategoryController::class);
 
-// Customer routes
-Route::get('/customers/stats', [CustomerController::class, 'stats']);
-Route::apiResource('customers', CustomerController::class);
+    // Stores
+    Route::apiResource('stores', StoreController::class);
 
+    // Products
+    Route::apiResource('products', ProductController::class);
+    Route::get('products/low-stock', [ProductController::class, 'lowStock']);
+    Route::get('products/search', [ProductController::class, 'search']);
 
+    // Sales
+    Route::get('sales/stats', [SaleController::class, 'stats']);
+    Route::patch('sales/{sale}/status', [SaleController::class, 'updateStatus']);
+    Route::apiResource('sales', SaleController::class);
 
-// Customer address routes
-Route::get('customers/{customerId}/addresses', [CustomerAddressController::class, 'index']);
-Route::apiResource('addresses', CustomerAddressController::class)->except(['index']);
-
-// Product routes
-Route::apiResource('products', ProductController::class);
-
-
-// Sale routes
-Route::apiResource('sales', SaleController::class);
-
-// Order routes
-Route::apiResource('orders', OrderController::class);
-
-// Dashboard/analytics routes
-Route::get('dashboard/stats', function () {
-    return app()->make(\App\Http\Controllers\Api\DashboardController::class)->stats();
+    // Orders
+    Route::apiResource('orders', OrderController::class);
+    Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus']);
+    Route::patch('orders/{order}/payment-status', [OrderController::class, 'updatePaymentStatus']);
+    Route::get('orders/stats', [OrderController::class, 'stats']);
 });

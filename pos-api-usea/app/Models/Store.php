@@ -20,11 +20,6 @@ class Store extends Model
         return $this->hasMany(Product::class);
     }
 
-    public function cashiers(): HasMany
-    {
-        return $this->hasMany(Cashier::class);
-    }
-
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);

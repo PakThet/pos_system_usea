@@ -27,8 +27,8 @@ class Customer extends Model
     protected $casts = [
         'status' => 'string',
         'tier' => 'string',
-        'total_spent' => 'decimal:2',
         'last_order_at' => 'datetime',
+        'total_spent' => 'decimal:2',
     ];
 
     public function addresses(): HasMany
@@ -46,13 +46,34 @@ class Customer extends Model
         return $this->hasMany(Order::class);
     }
 
-    public function getDefaultShippingAddressAttribute()
+    public function getFullNameAttribute(): string
     {
-        return $this->addresses()->where('type', 'shipping')->orWhere('type', 'both')->first();
+        return $this->first_name . ' ' . $this->last_name;
     }
+}
 
-    public function getDefaultBillingAddressAttribute()
+class CustomerAddress extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'customer_id',
+        'street',
+        'city',
+        'state',
+        'zip_code',
+        'country',
+        'type',
+        'is_default',
+    ];
+
+    protected $casts = [
+        'type' => 'string',
+        'is_default' => 'boolean',
+    ];
+
+    public function customer()
     {
-        return $this->addresses()->where('type', 'billing')->orWhere('type', 'both')->first();
+        return $this->belongsTo(Customer::class);
     }
 }

@@ -1,12 +1,10 @@
-'use client'
 import AdminLayout from "@/components/admin-layout";
-import { useRouter } from "next/navigation";
+import ProtectedRoute from "@/components/protected-route";
 
-export default function Layout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>){
-    const router = useRouter();
-    return <AdminLayout>{children}</AdminLayout>
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <AdminLayout>{children}</AdminLayout>
+    </ProtectedRoute>
+  );
 }

@@ -52,7 +52,7 @@ class ProductSeeder extends Seeder
                 'tax_rate' => 16.0,
                 'quantity' => 18,
                 'quantity_alert' => 5,
-                'image' => '11.jpg',
+                'image' => '22.jpg',
                 'status' => 'active',
             ],
             [
@@ -68,7 +68,7 @@ class ProductSeeder extends Seeder
                 'tax_rate' => 16.0,
                 'quantity' => 12,
                 'quantity_alert' => 3,
-                'image' => '11.jpg',
+                'image' => '33.jpg',
                 'status' => 'active',
             ],
         ];

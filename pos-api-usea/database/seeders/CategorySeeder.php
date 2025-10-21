@@ -7,44 +7,55 @@ use Illuminate\Database\Seeder;
 
 class CategorySeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
         $categories = [
-            // Electronics
             [
-                'name' => 'Smartphones',
-                'slug' => 'smartphones',
-                'description' => 'Latest smartphones and mobile devices',
+                'name' => 'Electronics',
+                'slug' => 'electronics',
+                'description' => 'Smartphones, laptops, tablets and other electronic devices',
                 'status' => 'active',
             ],
             [
-                'name' => 'Laptops',
-                'slug' => 'laptops',
-                'description' => 'Laptops and computing devices',
+                'name' => 'Clothing',
+                'slug' => 'clothing',
+                'description' => 'Men, women and children clothing and accessories',
                 'status' => 'active',
             ],
             [
-                'name' => 'Audio Devices',
-                'slug' => 'audio-devices',
-                'description' => 'Headphones, speakers, and audio equipment',
+                'name' => 'Home & Kitchen',
+                'slug' => 'home-kitchen',
+                'description' => 'Home appliances, kitchenware and household items',
                 'status' => 'active',
             ],
             [
-                'name' => 'Accessories',
-                'slug' => 'accessories',
-                'description' => 'Phone cases, chargers, and other accessories',
+                'name' => 'Books',
+                'slug' => 'books',
+                'description' => 'Fiction, non-fiction, educational books and magazines',
                 'status' => 'active',
             ],
             [
-                'name' => 'Tablets',
-                'slug' => 'tablets',
-                'description' => 'Tablets and portable devices',
+                'name' => 'Sports',
+                'slug' => 'sports',
+                'description' => 'Sports equipment, fitness gear and outdoor activities',
                 'status' => 'active',
             ],
             [
-                'name' => 'Wearables',
-                'slug' => 'wearables',
-                'description' => 'Smart watches and fitness trackers',
+                'name' => 'Beauty',
+                'slug' => 'beauty',
+                'description' => 'Cosmetics, skincare and beauty products',
+                'status' => 'active',
+            ],
+            [
+                'name' => 'Toys',
+                'slug' => 'toys',
+                'description' => 'Children toys, games and educational play items',
+                'status' => 'active',
+            ],
+            [
+                'name' => 'Food & Beverages',
+                'slug' => 'food-beverages',
+                'description' => 'Groceries, snacks, drinks and food items',
                 'status' => 'active',
             ],
         ];
@@ -52,5 +63,7 @@ class CategorySeeder extends Seeder
         foreach ($categories as $category) {
             Category::create($category);
         }
+
+        $this->command->info('Categories seeded successfully!');
     }
 }

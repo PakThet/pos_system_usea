@@ -1,4 +1,4 @@
-import React from "react"
+"use client"
 import { Tooltip, TooltipContent, TooltipProvider } from "./ui/tooltip"
 import { TooltipTrigger } from "@radix-ui/react-tooltip"
 import Link from "next/link"

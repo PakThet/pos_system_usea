@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
+    public function up()
     {
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
@@ -22,13 +22,25 @@ return new class extends Migration
             $table->timestamp('last_order_at')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
+        });
 
-            $table->index(['status', 'tier']);
+        Schema::create('customer_addresses', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('customer_id')->constrained()->onDelete('cascade');
+            $table->string('street');
+            $table->string('city');
+            $table->string('state');
+            $table->string('zip_code');
+            $table->string('country');
+            $table->enum('type', ['shipping', 'billing']);
+            $table->boolean('is_default')->default(false);
+            $table->timestamps();
         });
     }
 
-    public function down(): void
+    public function down()
     {
+        Schema::dropIfExists('customer_addresses');
         Schema::dropIfExists('customers');
     }
 };

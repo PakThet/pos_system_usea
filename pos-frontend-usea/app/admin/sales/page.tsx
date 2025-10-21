@@ -1,319 +1,274 @@
-"use client";
+// app/admin/sales/page.tsx
+'use client';
 
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SalesStats } from "@/components/sales/sales-stats";
-import { SalesChart } from "@/components/sales/sales-chart";
-import { RecentSales } from "@/components/sales/recent-sales";
-import { TopProducts } from "@/components/sales/top-products";
-import { PaymentMethodsStats } from "@/components/sales/payment-methods-stats";
-import { SalesFilters } from "@/components/sales/sales-filters";
-import { 
-  Sale, 
-  SalesSummary, 
-  SalesTrend, 
-  TopProduct, 
-  PaymentMethodStats,
-  SalesFilter 
-} from "@/types/sale";
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Search, 
+  Eye, 
+  Download,
+  Filter,
+  Calendar,
+  User,
+  CreditCard,
+  TrendingUp
+} from "lucide-react";
+import { api } from '@/lib/api';
+import { formatCurrency, formatDateTime } from '@/lib/utils';
 
-// Mock data - replace with actual API calls
-const mockSalesSummary: SalesSummary = {
-  totalSales: 28450.75,
-  totalTransactions: 342,
-  averageOrderValue: 83.19,
-  taxCollected: 2276.06,
-  discountGiven: 1250.50,
-  netSales: 29476.31,
-};
-
-const mockPreviousSummary: SalesSummary = {
-  totalSales: 24580.25,
-  totalTransactions: 298,
-  averageOrderValue: 82.48,
-  taxCollected: 1966.42,
-  discountGiven: 980.75,
-  netSales: 25565.92,
-};
-
-const mockSalesTrend: SalesTrend[] = [
-  { date: 'Mon', sales: 4250, transactions: 48, averageOrderValue: 88.54 },
-  { date: 'Tue', sales: 3890, transactions: 45, averageOrderValue: 86.44 },
-  { date: 'Wed', sales: 5120, transactions: 58, averageOrderValue: 88.28 },
-  { date: 'Thu', sales: 4780, transactions: 52, averageOrderValue: 91.92 },
-  { date: 'Fri', sales: 6250, transactions: 68, averageOrderValue: 91.91 },
-  { date: 'Sat', sales: 5820, transactions: 61, averageOrderValue: 95.41 },
-  { date: 'Sun', sales: 4340, transactions: 50, averageOrderValue: 86.80 },
-];
-
-const mockRecentSales: Sale[] = [
-  {
-    id: "1",
-    transactionId: "TXN-001",
-    customer: {
-      id: "cust1",
-      name: "John Doe",
-      email: "john.doe@example.com"
-    },
-    items: [
-      {
-        id: "item1",
-        productId: "prod1",
-        productName: "Wireless Headphones",
-        sku: "WH-001",
-        quantity: 1,
-        unitPrice: 199.99,
-        totalPrice: 199.99,
-        category: "Electronics"
-      }
-    ],
-    totalAmount: 215.99,
-    tax: 16.00,
-    discount: 0,
-    paymentMethod: "card",
-    status: "completed",
-    cashier: {
-      id: "cash1",
-      name: "Sarah Johnson"
-    },
-    createdAt: new Date('2024-01-15T14:30:00'),
-    updatedAt: new Date('2024-01-15T14:30:00')
-  },
-  {
-    id: "2",
-    transactionId: "TXN-002",
-    customer: {
-      id: "cust2",
-      name: "Jane Smith",
-      email: "jane.smith@example.com"
-    },
-    items: [
-      {
-        id: "item2",
-        productId: "prod2",
-        productName: "Smartphone Case",
-        sku: "SC-001",
-        quantity: 2,
-        unitPrice: 29.99,
-        totalPrice: 59.98,
-        category: "Accessories"
-      },
-      {
-        id: "item3",
-        productId: "prod3",
-        productName: "USB-C Cable",
-        sku: "UC-001",
-        quantity: 1,
-        unitPrice: 19.99,
-        totalPrice: 19.99,
-        category: "Accessories"
-      }
-    ],
-    totalAmount: 86.37,
-    tax: 6.40,
-    discount: 0,
-    paymentMethod: "mobile",
-    status: "completed",
-    cashier: {
-      id: "cash2",
-      name: "Mike Chen"
-    },
-    createdAt: new Date('2024-01-15T13:15:00'),
-    updatedAt: new Date('2024-01-15T13:15:00')
-  },
-  {
-    id: "3",
-    transactionId: "TXN-003",
-    items: [
-      {
-        id: "item4",
-        productId: "prod4",
-        productName: "Laptop Backpack",
-        sku: "LB-001",
-        quantity: 1,
-        unitPrice: 89.99,
-        totalPrice: 89.99,
-        category: "Bags"
-      }
-    ],
-    totalAmount: 97.19,
-    tax: 7.20,
-    discount: 0,
-    paymentMethod: "cash",
-    status: "completed",
-    cashier: {
-      id: "cash1",
-      name: "Sarah Johnson"
-    },
-    createdAt: new Date('2024-01-15T12:45:00'),
-    updatedAt: new Date('2024-01-15T12:45:00')
-  }
-];
-
-const mockTopProducts: TopProduct[] = [
-  {
-    id: "1",
-    name: "Wireless Headphones",
-    category: "Electronics",
-    sales: 45,
-    quantity: 45,
-    revenue: 8995.55,
-    growth: 12.5
-  },
-  {
-    id: "2",
-    name: "Smartphone Case",
-    category: "Accessories",
-    sales: 128,
-    quantity: 128,
-    revenue: 3838.72,
-    growth: 8.2
-  },
-  {
-    id: "3",
-    name: "USB-C Cable",
-    category: "Accessories",
-    sales: 95,
-    quantity: 95,
-    revenue: 1899.05,
-    growth: 15.7
-  },
-  {
-    id: "4",
-    name: "Laptop Backpack",
-    category: "Bags",
-    sales: 32,
-    quantity: 32,
-    revenue: 2879.68,
-    growth: -2.1
-  },
-  {
-    id: "5",
-    name: "Wireless Mouse",
-    category: "Electronics",
-    sales: 67,
-    quantity: 67,
-    revenue: 2679.33,
-    growth: 5.8
-  }
-];
-
-const mockPaymentStats: PaymentMethodStats[] = [
-  { method: 'card', count: 189, amount: 15845.25, percentage: 55 },
-  { method: 'cash', count: 87, amount: 7245.50, percentage: 25 },
-  { method: 'mobile', count: 52, amount: 4320.75, percentage: 15 },
-  { method: 'credit', count: 14, amount: 1039.25, percentage: 5 },
-];
+interface Sale {
+  id: number;
+  transaction_id: string;
+  status: 'completed' | 'pending' | 'cancelled' | 'refunded';
+  payment_method: 'card' | 'cash' | 'mobile' | 'credit';
+  total_amount: string;
+  customer?: {
+    first_name: string;
+    last_name: string;
+  };
+  cashier: {
+    first_name: string;
+    last_name: string;
+  };
+  created_at: string;
+  items_count: number;
+}
 
 export default function SalesPage() {
-  const [filters, setFilters] = useState<SalesFilter>({
-    period: 'week'
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilter, setDateFilter] = useState<string>('all');
 
-  const handleViewDetails = (sale: Sale) => {
-    console.log('View sale details:', sale);
-    // Implement view details functionality
+  useEffect(() => {
+    loadSales();
+  }, []);
+
+  const loadSales = async () => {
+    try {
+      const response = await api.get('/sales');
+      setSales(response.data.data.data);
+    } catch (error) {
+      console.error('Failed to load sales:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRefund = (sale: Sale) => {
-    console.log('Process refund for:', sale);
-    // Implement refund functionality
+  const filteredSales = sales.filter(sale =>
+    sale.transaction_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sale.customer?.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sale.customer?.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sale.cashier.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sale.cashier.last_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getStatusColor = (status: string) => {
+    const colors = {
+      completed: 'bg-green-100 text-green-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      cancelled: 'bg-red-100 text-red-800',
+      refunded: 'bg-gray-100 text-gray-800',
+    };
+    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  const handleExport = () => {
-    console.log('Export sales data with filters:', filters);
-    // Implement export functionality
+  const getPaymentMethodIcon = (method: string) => {
+    const icons = {
+      card: <CreditCard className="h-4 w-4" />,
+      cash: <TrendingUp className="h-4 w-4" />,
+      mobile: <CreditCard className="h-4 w-4" />,
+      credit: <CreditCard className="h-4 w-4" />,
+    };
+    return icons[method as keyof typeof icons] || <CreditCard className="h-4 w-4" />;
   };
 
-  const refreshData = async () => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-  };
+  const totalRevenue = sales.reduce((sum, sale) => sum + parseFloat(sale.total_amount), 0);
+  const completedSales = sales.filter(sale => sale.status === 'completed').length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">Loading sales...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Sales Dashboard</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Sales</h1>
           <p className="text-muted-foreground">
-            Monitor your sales performance and transactions
+            View and manage all sales transactions
           </p>
         </div>
-        <Button onClick={refreshData} disabled={isLoading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh Data
+        <Button variant="outline" className="flex items-center gap-2">
+          <Download className="h-4 w-4" />
+          Export
         </Button>
       </div>
 
-      {/* Filters */}
-      <SalesFilters
-        filters={filters}
-        onFiltersChange={setFilters}
-        onExport={handleExport}
-      />
-
-      {/* Sales Stats */}
-      <SalesStats 
-        summary={mockSalesSummary} 
-        previousPeriodSummary={mockPreviousSummary}
-      />
-
-      {/* Main Content */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="transactions">Transactions</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Sales Chart */}
-            <SalesChart data={mockSalesTrend} period="Last 7 Days" />
-
-            {/* Top Products */}
-            <TopProducts products={mockTopProducts} />
-          </div>
-
-          {/* Payment Methods */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-1">
-              <PaymentMethodsStats stats={mockPaymentStats} />
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
+                <p className="text-2xl font-bold mt-1">
+                  {formatCurrency(totalRevenue)}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-green-50">
+                <TrendingUp className="h-6 w-6 text-green-600" />
+              </div>
             </div>
-            <div className="lg:col-span-3">
-              <RecentSales
-                sales={mockRecentSales}
-                onViewDetails={handleViewDetails}
-                onRefund={handleRefund}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Sales</p>
+                <p className="text-2xl font-bold mt-1">{sales.length}</p>
+              </div>
+              <div className="p-3 rounded-full bg-blue-50">
+                <CreditCard className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                <p className="text-2xl font-bold mt-1">{completedSales}</p>
+              </div>
+              <div className="p-3 rounded-full bg-purple-50">
+                <Eye className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search and Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search sales by transaction ID, customer, or cashier..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
               />
             </div>
+            <select 
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="px-3 py-2 border rounded-lg bg-background"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+            </select>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              More Filters
+            </Button>
           </div>
-        </TabsContent>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="transactions">
-          <RecentSales
-            sales={mockRecentSales}
-            onViewDetails={handleViewDetails}
-            onRefund={handleRefund}
-          />
-        </TabsContent>
+      {/* Sales List */}
+      <div className="space-y-4">
+        {filteredSales.map((sale, index) => (
+          <motion.div
+            key={sale.id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-3">
+                      <h3 className="font-semibold text-lg">{sale.transaction_id}</h3>
+                      <div className="flex gap-2">
+                        <Badge className={getStatusColor(sale.status)}>
+                          {sale.status}
+                        </Badge>
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          {getPaymentMethodIcon(sale.payment_method)}
+                          {sale.payment_method}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span>
+                          {sale.customer 
+                            ? `${sale.customer.first_name} ${sale.customer.last_name}`
+                            : 'Walk-in Customer'
+                          }
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span>Cashier: {sale.cashier.first_name} {sale.cashier.last_name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span>{formatDateTime(sale.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-green-600">
+                        {formatCurrency(parseFloat(sale.total_amount))}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{sale.items_count} items</p>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      <Eye className="h-4 w-4 mr-1" />
+                      Details
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
 
-        <TabsContent value="analytics">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <SalesChart data={mockSalesTrend} period="Last 7 Days" />
-            <PaymentMethodsStats stats={mockPaymentStats} />
-            <div className="lg:col-span-2">
-              <TopProducts products={mockTopProducts} />
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+      {filteredSales.length === 0 && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold">No sales found</h3>
+            <p className="text-muted-foreground mt-2">
+              {searchTerm ? 'Try adjusting your search terms' : 'No sales transactions yet'}
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

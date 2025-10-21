@@ -1,325 +1,225 @@
-"use client";
+// app/admin/cashiers/page.tsx
+'use client';
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { 
-  Download, 
   Plus, 
-  Filter,
-  Users,
+  Search, 
+  Edit, 
+  Trash2, 
+  User,
+  Mail,
+  Phone,
   Clock,
-  RefreshCw
+  DollarSign
 } from "lucide-react";
-import { Cashier, CashierStats, CreateCashierData } from "@/types/cashier";
-import { toast } from "sonner";
-import { cashierApi } from "@/services/cashierApi";
-import { CashiersStats } from "@/components/cashiers/cashiers-stats";
-import { CashiersTable } from "@/components/cashiers/cashiers-table";
-import { CashierDetailsDialog } from "@/components/cashiers/cashier-details-dialog";
-import { CashierForm } from "@/components/cashiers/cashier-form";
+import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 
-const USE_API = process.env.NEXT_PUBLIC_USE_API === "true";
-
-// Transform API cashier to app cashier format
-const transformApiCashier = (apiCashier: any): Cashier => ({
-  id: apiCashier.id.toString(),
-  employee_id: apiCashier.employee_id,
-  first_name: apiCashier.first_name,
-  last_name: apiCashier.last_name,
-  email: apiCashier.email,
-  phone: apiCashier.phone || undefined,
-  status: apiCashier.status,
-  role: apiCashier.role,
-  shift: apiCashier.shift,
-  hourly_rate: parseFloat(apiCashier.hourly_rate),
-  total_hours: apiCashier.total_hours || 0,
-  total_sales: parseFloat(apiCashier.total_sales) || 0,
-  total_transactions: apiCashier.total_transactions || 0,
-  last_login_at: apiCashier.last_login_at || undefined,
-  permissions: Array.isArray(apiCashier.permissions)
-    ? apiCashier.permissions
-    : JSON.parse(apiCashier.permissions || '[]'), 
-  created_at: apiCashier.created_at,
-  updated_at: apiCashier.updated_at,
-});
-
+interface Cashier {
+  id: number;
+  employee_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  status: 'active' | 'inactive';
+  role: 'cashier' | 'manager' | 'admin';
+  shift: 'morning' | 'evening' | 'night';
+  hourly_rate: string;
+  total_sales: string;
+  total_transactions: number;
+  last_login_at: string;
+}
 
 export default function CashiersPage() {
   const [cashiers, setCashiers] = useState<Cashier[]>([]);
-  const [stats, setStats] = useState<CashierStats | null>(null);
-  const [selectedCashier, setSelectedCashier] = useState<Cashier | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [editingCashier, setEditingCashier] = useState<Cashier | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch cashiers and stats on component mount
   useEffect(() => {
-    fetchCashiers();
-    // fetchStats();
+    loadCashiers();
   }, []);
 
-  const fetchCashiers = async () => {
+  const loadCashiers = async () => {
     try {
-      setIsRefreshing(true);
-      
-     
-        const response = await cashierApi.getCashiers();
-        if (response.success) {
-          const transformedCashiers = response.data.map(transformApiCashier);
-          setCashiers(transformedCashiers);
-        } else {
-          console.error('Failed to fetch cashiers:', response.message);
-          toast.error('Failed to fetch cashiers');
-        }
-      
+      const response = await api.get('/users');
+      setCashiers(response.data.data.data);
     } catch (error) {
-      console.error('Error fetching cashiers:', error);
-      toast.error('Failed to fetch cashiers');
+      console.error('Failed to load cashiers:', error);
     } finally {
-      setIsRefreshing(false);
+      setLoading(false);
     }
   };
 
-  const handleViewCashier = (cashier: Cashier) => {
-    setSelectedCashier(cashier);
-    setShowDetails(true);
+  const filteredCashiers = cashiers.filter(cashier =>
+    cashier.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cashier.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cashier.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cashier.employee_id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getStatusColor = (status: string) => {
+    return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
   };
 
-  const handleEditCashier = (cashier: Cashier) => {
-    setEditingCashier(cashier);
-    setShowForm(true);
+  const getRoleColor = (role: string) => {
+    const colors = {
+      admin: 'bg-purple-100 text-purple-800',
+      manager: 'bg-blue-100 text-blue-800',
+      cashier: 'bg-green-100 text-green-800',
+    };
+    return colors[role as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  const handleStatusChange = async (cashierId: string, status: Cashier['status']) => {
-    try {
-      
-        const response = await cashierApi.updateCashierStatus(cashierId, status);
-        if (response.success) {
-          const updatedCashier = transformApiCashier(response.data);
-          setCashiers(prev =>
-            prev.map(cashier =>
-              cashier.id === cashierId ? updatedCashier : cashier
-            )
-          );
-          toast.success('Cashier status updated successfully');
-          // Refresh stats to get updated counts
-          // fetchStats();
-        } else {
-          console.error('Failed to update cashier status:', response.message);
-          toast.error('Failed to update cashier status');
-        }
-      
-    } catch (error) {
-      console.error('Error updating cashier status:', error);
-      toast.error('Failed to update cashier status');
-    }
+  const getShiftColor = (shift: string) => {
+    const colors = {
+      morning: 'bg-yellow-100 text-yellow-800',
+      evening: 'bg-orange-100 text-orange-800',
+      night: 'bg-indigo-100 text-indigo-800',
+    };
+    return colors[shift as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  const handleCreateCashier = async (data: CreateCashierData) => {
-  setIsLoading(true);
-  try {
-    
-      const response = await cashierApi.createCashier(data);
-      if (response.success) {
-        const newCashier = transformApiCashier(response.data);
-        setCashiers(prev => [...prev, newCashier]);
-        setShowForm(false);
-        toast.success('Cashier created successfully');
-        // Refresh stats to get updated counts
-        // fetchStats();
-      } else {
-        console.error('Failed to create cashier:', response.message);
-        toast.error('Failed to create cashier');
-      }
-    
-  } catch (error) {
-    console.error('Error creating cashier:', error);
-    toast.error('Failed to create cashier');
-  } finally {
-    setIsLoading(false);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">Loading cashiers...</div>
+      </div>
+    );
   }
-};
-
-
-  const handleUpdateCashier = async (data: CreateCashierData) => {
-    if (!editingCashier) return;
-    
-    setIsLoading(true);
-    try {
-      
-        const response = await cashierApi.updateCashier(editingCashier.id, data);
-        if (response.success) {
-          const updatedCashier = transformApiCashier(response.data);
-          setCashiers(prev =>
-            prev.map(cashier =>
-              cashier.id === editingCashier.id ? updatedCashier : cashier
-            )
-          );
-          setEditingCashier(null);
-          setShowForm(false);
-          toast.success('Cashier updated successfully');
-        } else {
-          console.error('Failed to update cashier:', response.message);
-          toast.error('Failed to update cashier');
-        }
-      
-    } catch (error) {
-      console.error('Error updating cashier:', error);
-      toast.error('Failed to update cashier');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteCashier = async (cashierId: string) => {
-    try {
-      
-        const response = await cashierApi.deleteCashier(cashierId);
-        if (response.success) {
-          setCashiers(prev => prev.filter(cashier => cashier.id !== cashierId));
-          toast.success('Cashier deleted successfully');
-          // Refresh stats to get updated counts
-          // fetchStats();
-        } else {
-          console.error('Failed to delete cashier:', response.message);
-          toast.error('Failed to delete cashier');
-        }
-      
-    } catch (error) {
-      console.error('Error deleting cashier:', error);
-      toast.error('Failed to delete cashier');
-    }
-  };
-
-  const handleRecordLogin = async (cashierId: string) => {
-    try {
-      
-        const response = await cashierApi.recordCashierLogin(cashierId);
-        if (response.success) {
-          const updatedCashier = transformApiCashier(response.data);
-          setCashiers(prev =>
-            prev.map(cashier =>
-              cashier.id === cashierId ? updatedCashier : cashier
-            )
-          );
-          toast.success('Login recorded successfully');
-        } else {
-          console.error('Failed to record login:', response.message);
-          toast.error('Failed to record login');
-        }
-      
-    } catch (error) {
-      console.error('Error recording login:', error);
-      toast.error('Failed to record login');
-    }
-  };
-
-  const handleExportCashiers = () => {
-    // Implement export functionality
-    console.log('Export cashiers');
-    toast.info('Export functionality coming soon');
-  };
-
-  const handleScheduleManagement = () => {
-    // Implement schedule management
-    console.log('Manage schedules');
-    toast.info('Schedule management coming soon');
-  };
-
-  const handleCancelForm = () => {
-    setShowForm(false);
-    setEditingCashier(null);
-  };
-
-  const handleRefresh = () => {
-    fetchCashiers();
-    // fetchStats();
-  };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Users className="h-8 w-8" />
-            Cashiers
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight">Cashiers</h1>
           <p className="text-muted-foreground">
-            Manage your cashier team and their schedules
+            Manage staff members and their permissions
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button variant="outline" onClick={handleScheduleManagement}>
-            <Clock className="h-4 w-4 mr-2" />
-            Schedules
-          </Button>
-          <Button variant="outline" onClick={handleExportCashiers}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Cashier
-          </Button>
-        </div>
+        <Button className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Add Staff
+        </Button>
       </div>
 
-      {/* Statistics */}
-      {stats && <CashiersStats stats={stats} />}
-
-      {/* Cashiers Table */}
+      {/* Search */}
       <Card>
-        <CardHeader>
-          <CardTitle>Cashier Management</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CashiersTable
-            cashiers={cashiers}
-            onView={handleViewCashier}
-            onEdit={handleEditCashier}
-            onStatusChange={handleStatusChange}
-            onRecordLogin={handleRecordLogin}
-            onDelete={handleDeleteCashier}
-            isLoading={isRefreshing}
-          />
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search cashiers by name, email, or employee ID..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Cashier Details Dialog */}
-      <CashierDetailsDialog
-        cashier={selectedCashier}
-        open={showDetails}
-        onOpenChange={setShowDetails}
-        onEdit={handleEditCashier}
-      />
+      {/* Cashiers Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredCashiers.map((cashier, index) => (
+          <motion.div
+            key={cashier.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Card className="h-full hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg">
+                    {cashier.first_name} {cashier.last_name}
+                  </CardTitle>
+                  <div className="flex flex-col gap-1 items-end">
+                    <Badge className={getStatusColor(cashier.status)}>
+                      {cashier.status}
+                    </Badge>
+                    <Badge className={getRoleColor(cashier.role)}>
+                      {cashier.role}
+                    </Badge>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">{cashier.employee_id}</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span>{cashier.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span>{cashier.phone || 'No phone'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <Badge className={getShiftColor(cashier.shift)}>
+                      {cashier.shift} shift
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-blue-600">
+                      {formatCurrency(parseFloat(cashier.total_sales))}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Total Sales</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-green-600">
+                      {cashier.total_transactions}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Transactions</p>
+                  </div>
+                </div>
 
-      {/* Cashier Form */}
-      {showForm && (
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <div className="text-sm">
+                    <p className="font-semibold">
+                      {formatCurrency(parseFloat(cashier.hourly_rate))}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Hourly Rate</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      {filteredCashiers.length === 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle>
-              {editingCashier ? "Edit Cashier" : "Add New Cashier"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CashierForm
-              cashier={editingCashier || undefined}
-              onSubmit={editingCashier ? handleUpdateCashier : handleCreateCashier}
-              onCancel={handleCancelForm}
-              isLoading={isLoading}
-            />
+          <CardContent className="p-8 text-center">
+            <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold">No cashiers found</h3>
+            <p className="text-muted-foreground mt-2">
+              {searchTerm ? 'Try adjusting your search terms' : 'Get started by adding your first staff member'}
+            </p>
+            <Button className="mt-4">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Staff
+            </Button>
           </CardContent>
         </Card>
       )}
