@@ -30,7 +30,7 @@ export function CategoryForm({
   const [formData, setFormData] = useState({
     name: category?.name || "",
     slug: category?.slug || "",
-    desc: category?.desc || "",
+    description: category?.description || "",
     status: category?.status || "active",
   });
 
@@ -39,7 +39,7 @@ export function CategoryForm({
     onSubmit({
       name: formData.name,
       slug: formData.slug,
-      desc: formData.desc,
+      description: formData.description,
       status: formData.status,
     });
   };
@@ -87,8 +87,8 @@ export function CategoryForm({
         <Label htmlFor="description">Description</Label>
         <Textarea
           id="description"
-          value={formData.desc}
-          onChange={(e) => setFormData({ ...formData, desc: e.target.value })}
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="Enter category description"
           rows={3}
         />

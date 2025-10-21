@@ -1,3 +1,4 @@
+
 import { Category } from "@/types/category";
 import { CategoryCard } from "./category-card";
 

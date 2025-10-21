@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Category } from "@/types/category";
 import { Edit, Trash2, MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
@@ -9,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Category } from "@/types/category";
 
 interface CategoryCardProps {
   category: Category;
@@ -45,7 +45,7 @@ export function CategoryCard({ category, onEdit, onDelete }: CategoryCardProps) 
       <CardContent>
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            {category.desc || "No description"}
+            {category.description || "No description"}
           </p>
           <div className="flex items-center justify-between">
             <Badge

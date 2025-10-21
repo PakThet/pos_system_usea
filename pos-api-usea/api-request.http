@@ -16,7 +16,7 @@ Content-Type: application/json
 
 
 ###
-GET http://localhost:8000/api/users
+GET http://localhost:8000/api/products
 Accept: application/json
 Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
 ###
@@ -28,7 +28,7 @@ GET http://localhost:8000/api/sales
 Accept: application/json
 Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
 ###
-GET http://localhost:8000/api/products
+GET http://localhost:8000/api/categories
 Accept: application/json
 Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
 ###

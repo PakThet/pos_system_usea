@@ -1,98 +1,88 @@
-import React from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+'use client';
+import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '@/components/ui/card';
+import { Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { FilePenIcon, TrashIcon, SearchIcon } from 'lucide-react';
 import { Product } from '@/types/product';
-import { Edit, Trash2, Eye } from 'lucide-react';
 
-interface ProductsTableProps {
+interface Props {
   products: Product[];
+  filtered: Product[];
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
-  onView: (product: Product) => void;
 }
 
-export const ProductsTable: React.FC<ProductsTableProps> = ({
-  products,
-  onEdit,
-  onDelete,
-  onView,
-}) => {
+export default function ProductTable({ products, filtered, onEdit, onDelete }: Props) {
   return (
-    <div className="border rounded-lg">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Image</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>SKU</TableHead>
-            <TableHead>Price</TableHead>
-            <TableHead>Quantity</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {products.map((product) => (
-            <TableRow key={product.id}>
-              <TableCell>
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-12 h-12 object-cover rounded"
-                />
-              </TableCell>
-              <TableCell className="font-medium">{product.name}</TableCell>
-              <TableCell>{product.sku}</TableCell>
-              <TableCell>${parseFloat(product.price).toLocaleString()}</TableCell>
-              <TableCell>
-                <Badge variant={product.quantity <= product.quantity_alert ? "destructive" : "outline"}>
-                  {product.quantity}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
-                  {product.status}
-                </Badge>
-              </TableCell>
-              <TableCell>{product.category.name}</TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onView(product)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onEdit(product)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => onDelete(product)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Product Inventory</CardTitle>
+        <span className="text-sm text-muted-foreground">
+          {filtered.length} product{filtered.length !== 1 ? 's' : ''} found
+        </span>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product</TableHead>
+                <TableHead>SKU</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Stock</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.length > 0 ? (
+                filtered.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <img src={p.image} className="w-10 h-10 rounded-md object-cover" />
+                        <div>
+                          <div className="font-semibold">{p.p_name}</div>
+                          <div className="text-sm text-muted-foreground">{p.slug}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{p.sku}</TableCell>
+                    <TableCell>${Number(p.price).toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Badge>{p.quantity > 0 ? 'In Stock' : 'Out of Stock'}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{p.cate}</Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => onEdit(p)}>
+                          <FilePenIcon className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => onDelete(p)}>
+                          <TrashIcon className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-6">
+                    <SearchIcon className="mx-auto w-10 h-10 text-muted-foreground mb-2" />
+                    <p>No products found.</p>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+      <CardFooter className="text-sm text-muted-foreground">
+        Showing {filtered.length} of {products.length} products
+      </CardFooter>
+    </Card>
   );
-};
+}
