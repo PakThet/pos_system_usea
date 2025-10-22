@@ -1,6 +1,7 @@
-"use client";
+'use client';
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,17 +31,17 @@ export function CustomerForm({
   onCancel,
   isLoading = false,
 }: CustomerFormProps) {
-  // Ensure we handle customers that may not have an address
   const firstAddress: CustomerAddress =
-    (Array.isArray(customer?.address)
-      ? customer?.address[0]
-      : (customer as any)?.address?.[0]) || {
+    (Array.isArray(customer?.addresses)
+      ? customer?.addresses[0]
+      : (customer as any)?.addresses?.[0]) || {
       street: "",
       city: "",
       state: "",
       zip_code: "",
       country: "",
     };
+
 
   const [formData, setFormData] = useState({
     firstName: customer?.first_name ?? "",
@@ -74,7 +75,7 @@ export function CustomerForm({
       formData.zipCode ||
       formData.country
     ) {
-      customerData.address = {
+      customerData.addresses = {
         street: formData.street,
         city: formData.city,
         state: formData.state,
@@ -87,12 +88,14 @@ export function CustomerForm({
   };
 
   return (
-    <form
+    <motion.form
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       onSubmit={handleSubmit}
-      className="space-y-8 bg-background p-6 rounded-2xl border"
+      className="space-y-6 bg-background p-6 rounded-2xl border"
     >
       {/* Personal Info Section */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
           <Input
@@ -182,7 +185,7 @@ export function CustomerForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="city">City</Label>
             <Input
@@ -208,7 +211,7 @@ export function CustomerForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="zipCode">ZIP Code</Label>
             <Input
@@ -244,6 +247,6 @@ export function CustomerForm({
           {isLoading ? "Saving..." : customer ? "Update" : "Create"} Customer
         </Button>
       </div>
-    </form>
+    </motion.form>
   );
 }

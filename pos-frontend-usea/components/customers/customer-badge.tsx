@@ -1,5 +1,6 @@
-"use client";
+'use client';
 
+import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, Crown, Star, User } from "lucide-react";
 
@@ -16,7 +17,6 @@ interface CustomerTierBadgeProps {
   size?: "sm" | "default";
 }
 
-// Status config with fallback
 const statusConfig: Record<
   CustomerStatus,
   { label: string; variant: "default" | "secondary"; icon: React.FC<any>; color: string }
@@ -25,7 +25,6 @@ const statusConfig: Record<
   inactive: { label: "Inactive", variant: "secondary", icon: XCircle, color: "text-gray-500" },
 };
 
-// Tier config with fallback
 const tierConfig: Record<
   CustomerTier,
   { label: string; variant: "default" | "secondary" | "outline"; icon: React.FC<any>; color: string }
@@ -36,25 +35,29 @@ const tierConfig: Record<
 };
 
 export function CustomerStatusBadge({ status, size = "default" }: CustomerStatusBadgeProps) {
-  const config = statusConfig[status] ?? statusConfig["inactive"]; // fallback to inactive
+  const config = statusConfig[status] ?? statusConfig["inactive"];
   const Icon = config.icon;
 
   return (
-    <Badge variant={config.variant} className={`gap-1 ${size === "sm" ? "text-xs" : ""}`}>
-      <Icon className={`h-3 w-3 ${config.color}`} />
-      {config.label}
-    </Badge>
+    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+      <Badge variant={config.variant} className={`gap-1 ${size === "sm" ? "text-xs" : ""}`}>
+        <Icon className={`h-3 w-3 ${config.color}`} />
+        {config.label}
+      </Badge>
+    </motion.div>
   );
 }
 
 export function CustomerTierBadge({ tier, size = "default" }: CustomerTierBadgeProps) {
-  const config = tierConfig[tier] ?? tierConfig["standard"]; // fallback to standard
+  const config = tierConfig[tier] ?? tierConfig["standard"];
   const Icon = config.icon;
 
   return (
-    <Badge variant={config.variant} className={`gap-1 ${size === "sm" ? "text-xs" : ""}`}>
-      <Icon className={`h-3 w-3 ${config.color}`} />
-      {config.label}
-    </Badge>
+    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+      <Badge variant={config.variant} className={`gap-1 ${size === "sm" ? "text-xs" : ""}`}>
+        <Icon className={`h-3 w-3 ${config.color}`} />
+        {config.label}
+      </Badge>
+    </motion.div>
   );
 }

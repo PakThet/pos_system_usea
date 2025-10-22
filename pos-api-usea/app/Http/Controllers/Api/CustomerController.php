@@ -143,48 +143,69 @@ class CustomerController extends Controller
     }
 
     public function update(Request $request, Customer $customer)
-    {
-        try {
-            $validated = $request->validate([
-                'first_name' => 'sometimes|string|max:255',
-                'last_name' => 'sometimes|string|max:255',
-                'email' => 'sometimes|email|unique:customers,email,' . $customer->id,
-                'phone' => 'nullable|string',
-                'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-                'status' => 'sometimes|in:active,inactive',
-                'tier' => 'sometimes|in:standard,premium,vip',
-                'notes' => 'nullable|string',
-            ]);
+{
+    try {
+        $validated = $request->validate([
+            'first_name' => 'sometimes|string|max:255',
+            'last_name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:customers,email,' . $customer->id,
+            'phone' => 'nullable|string',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'status' => 'sometimes|in:active,inactive',
+            'tier' => 'sometimes|in:standard,premium,vip',
+            'notes' => 'nullable|string',
+            'address' => 'sometimes|array',
+            'address.street' => 'required_with:address|string',
+            'address.city' => 'required_with:address|string',
+            'address.state' => 'required_with:address|string',
+            'address.zip_code' => 'required_with:address|string',
+            'address.country' => 'required_with:address|string',
+        ]);
 
-            // Handle avatar upload
-            if ($request->hasFile('avatar')) {
-                // Delete old avatar if exists
-                if ($customer->avatar) {
-                    $this->deleteImage($customer->avatar);
-                }
-                $validated['avatar'] = $this->storeImage($request->file('avatar'), 'customers');
-            }
-
-            $customer->update($validated);
-            $customer->load('addresses');
-
-            // Convert avatar path to full URL
+        // ✅ Handle avatar upload
+        if ($request->hasFile('avatar')) {
             if ($customer->avatar) {
-                $customer->avatar = $this->getImageUrl($customer->avatar);
+                $this->deleteImage($customer->avatar);
             }
-
-            return response()->json([
-                "success" => true,
-                "message" => "Customer updated successfully",
-                "data" => $customer,
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            $validated['avatar'] = $this->storeImage($request->file('avatar'), 'customers');
         }
+
+        // ✅ Update customer basic info
+        $customer->update($validated);
+
+        // ✅ Handle address (create or update)
+        if ($request->has('address')) {
+            $addressData = $request->address;
+            $existingAddress = $customer->addresses()->first();
+
+            if ($existingAddress) {
+                $existingAddress->update($addressData);
+            } else {
+                $customer->addresses()->create($addressData);
+            }
+        }
+
+        // ✅ Reload addresses relation
+        $customer->load('addresses');
+
+        // ✅ Convert avatar path to full URL
+        if ($customer->avatar) {
+            $customer->avatar = $this->getImageUrl($customer->avatar);
+        }
+
+        return response()->json([
+            "success" => true,
+            "message" => "Customer updated successfully",
+            "data" => $customer,
+        ]);
+    } catch (Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
     public function destroy(Customer $customer)
     {

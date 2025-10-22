@@ -1,209 +1,281 @@
-// app/admin/customers/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
   Users,
-  Mail,
-  Phone,
-  Calendar
+  RefreshCw,
+  Download,
+  Trash2
 } from "lucide-react";
-import { api } from '@/lib/api';
-import { formatCurrency, formatDate } from '@/lib/utils';
-
-interface Customer {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone?: string;
-  status: 'active' | 'inactive';
-  tier: 'standard' | 'premium' | 'vip';
-  total_orders: number;
-  total_spent: number;
-  last_order_at?: string;
-}
+import { Customer, CreateCustomerData, UpdateCustomerData } from '@/types/customer';
+import { CustomersStats } from '@/components/customers/customers-stats';
+import { CustomersTable } from '@/components/customers/customers-table';
+import { CustomerForm } from '@/components/customers/customer-form';
+import { CustomerDetailsDialog } from '@/components/customers/customer-details-dialog';
+import { customerApi } from '@/services/customerApi';
+import { LoadingSpinner } from '@/components/customers/LoadingSpinner';
+import { ErrorAlert } from '@/components/customers/ErrorAlert';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // UI States
+  const [showForm, setShowForm] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // Selected Data
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   useEffect(() => {
-    loadCustomers();
+    loadData();
   }, []);
 
-  const loadCustomers = async () => {
+  const loadData = async () => {
     try {
-      const response = await api.get('/customers');
-      setCustomers(response.data.data.data);
-    } catch (error) {
-      console.error('Failed to load customers:', error);
+      setError(null);
+      const [customersResponse, statsResponse] = await Promise.all([
+        customerApi.getCustomers(),
+        customerApi.getCustomerStats()
+      ]);
+      
+      setCustomers(customersResponse.data);
+      setStats(statsResponse.data);
+    } catch (err) {
+      setError('Failed to load customers data');
+      console.error('Error loading data:', err);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phone?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadData();
+  };
 
-  const getTierColor = (tier: string) => {
-    switch (tier) {
-      case 'vip': return 'bg-purple-100 text-purple-800';
-      case 'premium': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const handleCreateCustomer = async (data: CreateCustomerData) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await customerApi.createCustomer(data);
+      setCustomers(prev => [response.data, ...prev]);
+      setShowForm(false);
+      await loadData(); // Refresh stats
+    } catch (err) {
+      setError('Failed to create customer');
+      console.error('Error creating customer:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+  const handleUpdateCustomer = async (data: UpdateCustomerData) => {
+    if (!editingCustomer) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await customerApi.updateCustomer(editingCustomer.id, data);
+      setCustomers(prev => 
+        prev.map(customer => 
+          customer.id === editingCustomer.id ? response.data : customer
+        )
+      );
+      setShowForm(false);
+      setEditingCustomer(null);
+    } catch (err) {
+      setError('Failed to update customer');
+      console.error('Error updating customer:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!customerToDelete) return;
+
+    try {
+      setError(null);
+      await customerApi.deleteCustomer(customerToDelete.id);
+      setCustomers(prev => prev.filter(customer => customer.id !== customerToDelete.id));
+      setShowDeleteConfirm(false);
+      setCustomerToDelete(null);
+      await loadData(); 
+    } catch (err) {
+      setError('Failed to delete customer');
+      console.error('Error deleting customer:', err);
+    }
+  };
+
+  const handleEditCustomer = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setShowForm(true);
+  };
+
+  const handleContactCustomer = (customer: Customer) => {
+    // Implement contact logic
+    console.log('Contact customer:', customer);
+  };
+
+  const confirmDeleteCustomer = (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleCancelForm = () => {
+    setShowForm(false);
+    setEditingCustomer(null);
+  };
+
+  const handleExportCustomers = async () => {
+    try {
+      setError(null);
+      const response = await customerApi.exportCustomers();
+      // Trigger download
+      window.open(response.data.url, '_blank');
+    } catch (err) {
+      setError('Failed to export customers');
+      console.error('Error exporting customers:', err);
+    }
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">Loading customers...</div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+      >
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
-          <p className="text-muted-foreground">
-            Manage your customer database and relationships
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Users className="h-8 w-8" /> 
+            Customers
+          </h1>
+          <p className="text-muted-foreground">Manage your customer relationships and data</p>
         </div>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add Customer
-        </Button>
-      </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <Button variant="outline" onClick={handleExportCustomers}>
+            <Download className="h-4 w-4 mr-2" /> 
+            Export
+          </Button>
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4 mr-2" /> 
+            Add Customer
+          </Button>
+        </div>
+      </motion.div>
 
-      {/* Search and Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search customers by name, email, or phone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button variant="outline">
-              Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Error Alert */}
+      {error && <ErrorAlert error={error} onDismiss={() => setError(null)} />}
 
-      {/* Customers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCustomers.map((customer, index) => (
-          <motion.div
-            key={customer.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <Card className="h-full hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">
-                    {customer.first_name} {customer.last_name}
-                  </CardTitle>
-                  <div className="flex gap-1">
-                    <Badge className={getTierColor(customer.tier)}>
-                      {customer.tier}
-                    </Badge>
-                    <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
-                      {customer.status}
-                    </Badge>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>{customer.email}</span>
-                  </div>
-                  {customer.phone && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span>{customer.phone}</span>
-                    </div>
-                  )}
-                  {customer.last_order_at && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>Last order: {formatDate(customer.last_order_at)}</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">{customer.total_orders}</p>
-                    <p className="text-xs text-muted-foreground">Total Orders</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">
-                      {formatCurrency(customer.total_spent)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Total Spent</p>
-                  </div>
-                </div>
+      {/* Stats */}
+      {stats && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <CustomersStats stats={stats} />
+        </motion.div>
+      )}
 
-                <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1">
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
-
-      {filteredCustomers.length === 0 && (
+      {/* Customers Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
         <Card>
-          <CardContent className="p-8 text-center">
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold">No customers found</h3>
-            <p className="text-muted-foreground mt-2">
-              {searchTerm ? 'Try adjusting your search terms' : 'Get started by adding your first customer'}
-            </p>
-            <Button className="mt-4">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Customer
-            </Button>
+          <CardContent className="p-0">
+            <CustomersTable
+              customers={customers}
+              onView={(customer) => {
+                setSelectedCustomer(customer);
+                setShowDetails(true);
+              }}
+              onEdit={handleEditCustomer}
+              onContact={handleContactCustomer}
+              onDelete={confirmDeleteCustomer}
+              isLoading={isRefreshing}
+            />
           </CardContent>
         </Card>
+      </motion.div>
+
+      {/* Customer Details Dialog */}
+      <CustomerDetailsDialog
+        customer={selectedCustomer}
+        open={showDetails}
+        onOpenChange={setShowDetails}
+        onEdit={handleEditCustomer}
+      />
+
+      {/* Customer Form */}
+      {showForm && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card>
+            <CardContent className="p-6">
+              <CustomerForm
+                customer={editingCustomer || undefined}
+                onSubmit={editingCustomer ? handleUpdateCustomer : handleCreateCustomer}
+                onCancel={handleCancelForm}
+                isLoading={isLoading}
+              />
+            </CardContent>
+          </Card>
+        </motion.div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+          </DialogHeader>
+          <p className="mb-4">
+            Are you sure you want to delete{" "}
+            <strong>
+              {customerToDelete?.first_name} {customerToDelete?.last_name}
+            </strong>
+            ? This action cannot be undone.
+          </p>
+          <DialogFooter className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteCustomer} className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4" /> 
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
