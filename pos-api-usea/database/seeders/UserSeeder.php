@@ -13,8 +13,8 @@ class UserSeeder extends Seeder
         $users = [
             [
                 'employee_id' => 'EMP001',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
+                'first_name' => 'Pak',
+                'last_name' => 'Thet',
                 'email' => 'admin@gmail.com',
                 'phone' => '+1234567890',
                 'status' => 'active',

@@ -129,6 +129,12 @@ export default function LoginPage() {
               >
                 {isLoading ? 'Signing in...' : 'Sign in'}
               </Button>
+              <p className="text-gray-600 text-sm">
+                From Testing Demo <br />
+                Username: admin@gmail.com |
+                Password: 123
+
+              </p>
             </form>
           </CardContent>
         </Card>
