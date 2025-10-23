@@ -16,7 +16,7 @@ Content-Type: application/json
 
 
 ###
-GET http://localhost:8000/api/products
+GET http://localhost:8000/api/users
 Accept: application/json
 Authorization: Bearer 2|rpJpe85ZYB4WmOKn696Vp29MjF8kkFtrQduWkbPU3cbf05a7
 ###

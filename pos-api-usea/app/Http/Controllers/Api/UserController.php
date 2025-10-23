@@ -223,6 +223,29 @@ class UserController extends Controller
             ], 500);
         }
     }
+    public function updateStatus(Request $request, User $user)
+{
+    try {
+        $validated = $request->validate([
+            'status' => 'required|in:active,inactive,on-break',
+        ]);
+
+        $user->update(['status' => $validated['status']]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User status updated successfully',
+            'data' => $user,
+        ]);
+    } catch (Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
 
     private function storeImage($image, $folder = 'avatars')
     {
