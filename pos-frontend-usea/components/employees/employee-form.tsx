@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,16 +9,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Cashier, CreateCashierData } from "@/types/employee";
+import { Employee, CreateEmployeeData } from "@/types/employee";
 import { storeApi } from "@/services/storeApi";
 import { Store } from "@/types/product";
-import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface CashierFormProps {
-  cashier?: Cashier;
-  onSubmit: (data: CreateCashierData & { store_id: string }) => void;
+interface EmployeeFormProps {
+  employee?: Employee;
+  onSubmit: (data: CreateEmployeeData & { store_id: string }) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -32,15 +27,15 @@ const defaultPermissions = [
   "manage_discounts",
 ];
 
-type CashierFormData = CreateCashierData & { store_id: string };
+type EmployeeFormData = CreateEmployeeData & { store_id: string };
 
-export function CashierForm({
-  cashier,
+export function EmployeeForm({
+  employee,
   onSubmit,
   onCancel,
   isLoading = false,
-}: CashierFormProps) {
-  const [formData, setFormData] = useState<CashierFormData>({
+}: EmployeeFormProps) {
+  const [formData, setFormData] = useState<EmployeeFormData>({
     store_id: "",
     employee_id: "",
     first_name: "",
@@ -52,7 +47,6 @@ export function CashierForm({
     shift: "morning",
     hourly_rate: 15,
     permissions: defaultPermissions,
-    notes: "",
   });
 
   const [stores, setStores] = useState<Store[]>([]);
@@ -62,13 +56,12 @@ export function CashierForm({
     const fetchStores = async () => {
       try {
         const res = await storeApi.getStores();
-if (res.data) {
-  setStores(res.data);
-  if (!formData.store_id && res.data.length > 0) {
-    setFormData((prev) => ({ ...prev, store_id: res.data[0].id.toString() }));
-  }
-}
-
+        if (res.data) {
+          setStores(res.data);
+          if (!formData.store_id && res.data.length > 0) {
+            setFormData((prev) => ({ ...prev, store_id: res.data[0].id.toString() }));
+          }
+        }
       } catch (e) {
         console.error("Error fetching stores:", e);
       }
@@ -76,39 +69,38 @@ if (res.data) {
     fetchStores();
   }, []);
 
-  // Load cashier data when editing
+  // Load employee data when editing
   useEffect(() => {
-    if (cashier) {
+    if (employee) {
       let parsedPermissions: string[] = [];
 
-      if (typeof cashier.permissions === "string") {
+      if (typeof employee.permissions === "string") {
         try {
-          parsedPermissions = JSON.parse(cashier.permissions);
+          parsedPermissions = JSON.parse(employee.permissions);
         } catch {
           parsedPermissions = defaultPermissions;
         }
-      } else if (Array.isArray(cashier.permissions)) {
-        parsedPermissions = cashier.permissions;
+      } else if (Array.isArray(employee.permissions)) {
+        parsedPermissions = employee.permissions;
       } else {
         parsedPermissions = defaultPermissions;
       }
 
       setFormData({
-        store_id: cashier.store_id?.toString() ?? "",
-        employee_id: cashier.employee_id || "",
-        first_name: cashier.first_name || "",
-        last_name: cashier.last_name || "",
-        email: cashier.email || "",
-        phone: cashier.phone || "",
-        status: cashier.status || "active",
-        role: cashier.role || "cashier",
-        shift: cashier.shift || "morning",
-        hourly_rate: cashier.hourly_rate || 15,
+        store_id: employee.store_id?.toString() ?? "",
+        employee_id: employee.employee_id || "",
+        first_name: employee.first_name || "",
+        last_name: employee.last_name || "",
+        email: employee.email || "",
+        phone: employee.phone || "",
+        status: employee.status || "active",
+        role: employee.role || "cashier",
+        shift: employee.shift || "morning",
+        hourly_rate: employee.hourly_rate || 15,
         permissions: parsedPermissions,
-        notes: cashier.notes || "",
       });
     }
-  }, [cashier]);
+  }, [employee]);
 
   // Handle submit
   const handleSubmit = (e: React.FormEvent) => {
@@ -138,39 +130,13 @@ if (res.data) {
     { id: "manage_inventory", label: "Manage Inventory" },
     { id: "access_cash_drawer", label: "Access Cash Drawer" },
     { id: "manage_users", label: "Manage Users" },
+    { id: "all", label: "All Permissions" },
   ];
 
-  const formVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: {
-        duration: 0.5
-      }
-    }
-  };
-
   return (
-    <motion.form 
-      onSubmit={handleSubmit} 
-      className="space-y-6"
-      variants={formVariants}
-      initial="hidden"
-      animate="visible"
-    >
+    <form onSubmit={handleSubmit} className="space-y-6">
       {/* Store */}
-      <motion.div variants={itemVariants}>
+      <div className="space-y-2">
         <Label htmlFor="store_id">Store</Label>
         <Select
           value={formData.store_id}
@@ -187,10 +153,10 @@ if (res.data) {
             ))}
           </SelectContent>
         </Select>
-      </motion.div>
+      </div>
 
       {/* Employee ID */}
-      <motion.div variants={itemVariants}>
+      <div className="space-y-2">
         <Label htmlFor="employee_id">Employee ID</Label>
         <Input
           id="employee_id"
@@ -201,10 +167,10 @@ if (res.data) {
           placeholder="Enter employee ID"
           required
         />
-      </motion.div>
+      </div>
 
       {/* First & Last Name */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
           <Input
@@ -229,10 +195,10 @@ if (res.data) {
             required
           />
         </div>
-      </motion.div>
+      </div>
 
       {/* Email & Phone */}
-      <motion.div variants={itemVariants}>
+      <div className="space-y-2">
         <Label htmlFor="email">Email Address</Label>
         <Input
           id="email"
@@ -242,8 +208,8 @@ if (res.data) {
           placeholder="Enter email address"
           required
         />
-      </motion.div>
-      <motion.div variants={itemVariants}>
+      </div>
+      <div className="space-y-2">
         <Label htmlFor="phone">Phone Number</Label>
         <Input
           id="phone"
@@ -251,10 +217,10 @@ if (res.data) {
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           placeholder="Enter phone number"
         />
-      </motion.div>
+      </div>
 
       {/* Status, Role, Shift */}
-      <motion.div variants={itemVariants} className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="status">Status</Label>
           <Select
@@ -278,7 +244,7 @@ if (res.data) {
           <Label htmlFor="role">Role</Label>
           <Select
             value={formData.role}
-            onValueChange={(value: "cashier" | "senior-cashier" | "head-cashier") =>
+            onValueChange={(value: "admin" | "manager" | "cashier" | "senior-cashier" | "head-cashier") =>
               setFormData({ ...formData, role: value })
             }
           >
@@ -286,6 +252,8 @@ if (res.data) {
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="manager">Manager</SelectItem>
               <SelectItem value="cashier">Cashier</SelectItem>
               <SelectItem value="senior-cashier">Senior Cashier</SelectItem>
               <SelectItem value="head-cashier">Head Cashier</SelectItem>
@@ -312,10 +280,10 @@ if (res.data) {
             </SelectContent>
           </Select>
         </div>
-      </motion.div>
+      </div>
 
       {/* Hourly Rate */}
-      <motion.div variants={itemVariants}>
+      <div className="space-y-2">
         <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
         <Input
           id="hourlyRate"
@@ -329,73 +297,43 @@ if (res.data) {
           placeholder="Enter hourly rate"
           required
         />
-      </motion.div>
-
-      {/* Notes */}
-      <motion.div variants={itemVariants}>
-        <Label htmlFor="notes">Notes</Label>
-        <Textarea
-          id="notes"
-          value={formData.notes}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          placeholder="Enter any additional notes..."
-          rows={3}
-        />
-      </motion.div>
+      </div>
 
       {/* Permissions */}
-      <motion.div variants={itemVariants}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Permissions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              {permissionOptions.map((permission) => (
-                <div key={permission.id} className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id={permission.id}
-                    checked={formData.permissions?.includes(permission.id) ?? false}
-                    onChange={(e) =>
-                      handlePermissionChange(permission.id, e.target.checked)
-                    }
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <Label
-                    htmlFor={permission.id}
-                    className="text-sm font-normal cursor-pointer flex-1"
-                  >
-                    {permission.label}
-                  </Label>
-                </div>
-              ))}
+      <div className="space-y-4">
+        <Label className="text-base">Permissions</Label>
+        <div className="grid grid-cols-2 gap-4">
+          {permissionOptions.map((permission) => (
+            <div key={permission.id} className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id={permission.id}
+                checked={formData.permissions?.includes(permission.id) ?? false}
+                onChange={(e) =>
+                  handlePermissionChange(permission.id, e.target.checked)
+                }
+                className="rounded border-gray-300"
+              />
+              <Label
+                htmlFor={permission.id}
+                className="text-sm font-normal cursor-pointer"
+              >
+                {permission.label}
+              </Label>
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+          ))}
+        </div>
+      </div>
 
       {/* Buttons */}
-      <motion.div 
-        variants={itemVariants}
-        className="flex justify-end space-x-3 pt-6 border-t"
-      >
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isLoading} className="gap-2">
-          {isLoading ? (
-            <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Saving...
-            </>
-          ) : cashier ? (
-            "Update Cashier"
-          ) : (
-            "Create Cashier"
-          )}
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? "Saving..." : employee ? "Update" : "Create"} Employee
         </Button>
-      </motion.div>
-    </motion.form>
+      </div>
+    </form>
   );
 }

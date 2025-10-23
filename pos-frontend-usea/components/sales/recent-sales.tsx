@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Table,
   TableBody,
@@ -16,7 +18,8 @@ import {
   CreditCard,
   DollarSign,
   Smartphone,
-  Wallet
+  Wallet,
+  User
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,6 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { motion } from "framer-motion";
 
 interface RecentSalesProps {
   sales: Sale[];
@@ -32,20 +36,20 @@ interface RecentSalesProps {
 }
 
 export function RecentSales({ sales, onViewDetails, onRefund }: RecentSalesProps) {
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: string) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(amount);
+    }).format(parseFloat(amount));
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(date);
+    }).format(new Date(dateString));
   };
 
   const getPaymentIcon = (method: string) => {
@@ -68,98 +72,153 @@ export function RecentSales({ sales, onViewDetails, onRefund }: RecentSalesProps
     }
   };
 
-  return (
-    <div className="border rounded-lg">
-      <div className="p-4 border-b">
-        <h3 className="font-semibold">Recent Transactions</h3>
-      </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Transaction ID</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Payment</TableHead>
-            <TableHead>Items</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-            <TableHead className="w-[80px]"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sales.map((sale) => (
-            <TableRow key={sale.id} className="hover:bg-muted/50">
-              <TableCell className="font-medium">
-                <div className="flex items-center gap-2">
-                  <Receipt className="h-3 w-3 text-muted-foreground" />
-                  {sale.transactionId}
-                </div>
-              </TableCell>
-              <TableCell>
-                {sale.customer ? (
-                  <div>
-                    <div className="font-medium">{sale.customer.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {sale.customer.email}
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-muted-foreground">Walk-in</span>
-                )}
-              </TableCell>
-              <TableCell>{formatDate(sale.createdAt)}</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  {getPaymentIcon(sale.paymentMethod)}
-                  <span className="capitalize">{sale.paymentMethod}</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="text-sm">
-                  {sale.items.length} item{sale.items.length !== 1 ? 's' : ''}
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge variant={getStatusVariant(sale.status)}>
-                  {sale.status}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right font-semibold">
-                {formatCurrency(sale.totalAmount)}
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onViewDetails(sale)}>
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Details
-                    </DropdownMenuItem>
-                    {sale.status === 'completed' && (
-                      <DropdownMenuItem onClick={() => onRefund(sale)}>
-                        <Receipt className="h-4 w-4 mr-2" />
-                        Process Refund
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05
+      }
+    }
+  };
 
-      {sales.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-muted-foreground">
-            No sales transactions found.
-          </div>
+  const rowVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: { 
+      opacity: 1, 
+      x: 0,
+      transition: {
+        duration: 0.4
+      }
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+    >
+      <div className="border-0 rounded-lg shadow-lg bg-gradient-to-br from-background to-muted/20 overflow-hidden">
+        <div className="p-6 border-b bg-card/50">
+          <h3 className="font-semibold text-xl flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-primary" />
+            Recent Transactions
+          </h3>
         </div>
-      )}
-    </div>
+        
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow>
+                <TableHead className="font-semibold">Transaction</TableHead>
+                <TableHead className="font-semibold">Customer</TableHead>
+                <TableHead className="font-semibold">Date</TableHead>
+                <TableHead className="font-semibold">Payment</TableHead>
+                <TableHead className="font-semibold">Items</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
+                <TableHead className="font-semibold text-right">Amount</TableHead>
+                <TableHead className="w-[80px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <motion.tbody
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {sales.map((sale, index) => (
+                <motion.tr
+                  key={sale.id}
+                  variants={rowVariants}
+                  className="border-b hover:bg-accent/50 transition-colors group"
+                  whileHover={{ scale: 1.005 }}
+                >
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <Receipt className="h-3 w-3 text-muted-foreground" />
+                      <span className="font-mono text-sm">{sale.transaction_id}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {sale.customer ? (
+                      <div className="flex items-center gap-2">
+                        <User className="h-3 w-3 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium">
+                            {sale.customer.first_name} {sale.customer.last_name}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {sale.customer.email}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Walk-in Customer</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm">{formatDate(sale.created_at)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {getPaymentIcon(sale.payment_method)}
+                      <span className="capitalize text-sm font-medium">{sale.payment_method}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm font-medium">
+                      {sale.items.length} item{sale.items.length !== 1 ? 's' : ''}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={getStatusVariant(sale.status)} 
+                      className="font-medium"
+                    >
+                      {sale.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-bold text-lg text-green-600">
+                    {formatCurrency(sale.total_amount)}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => onViewDetails(sale)} className="cursor-pointer">
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
+                        </DropdownMenuItem>
+                        {sale.status === 'completed' && (
+                          <DropdownMenuItem onClick={() => onRefund(sale)} className="cursor-pointer text-destructive">
+                            <Receipt className="h-4 w-4 mr-2" />
+                            Process Refund
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </motion.tr>
+              ))}
+            </motion.tbody>
+          </Table>
+        </div>
+
+        {sales.length === 0 && (
+          <motion.div 
+            className="text-center py-12"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <div className="text-muted-foreground text-lg">
+              No sales transactions found.
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
   );
 }

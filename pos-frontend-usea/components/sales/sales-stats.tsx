@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SalesSummary } from "@/types/sale";
 import { 
   DollarSign, 
@@ -6,114 +5,94 @@ import {
   ShoppingCart, 
   TrendingUp,
   Users,
-  Percent
+  Percent,
+  BarChart3
 } from "lucide-react";
+import { StatsCard } from "./stats-card";
 
 interface SalesStatsProps {
   summary: SalesSummary;
-  previousPeriodSummary?: SalesSummary;
 }
 
-export function SalesStats({ summary, previousPeriodSummary }: SalesStatsProps) {
+export function SalesStats({ summary }: SalesStatsProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
-  const calculateGrowth = (current: number, previous: number) => {
-    if (previous === 0) return 100;
-    return ((current - previous) / previous) * 100;
+  const formatCompact = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(amount);
   };
 
   const stats = [
     {
-      title: "Total Sales",
-      value: formatCurrency(summary.totalSales),
+      title: "Total Revenue",
+      value: formatCurrency(summary.total_revenue),
+      description: "Gross revenue collected",
       icon: DollarSign,
-      color: "text-green-500",
-      bgColor: "bg-green-50",
-      growth: previousPeriodSummary ? calculateGrowth(summary.totalSales, previousPeriodSummary.totalSales) : 0,
-      description: "Gross sales amount"
+      color: "text-green-600",
+      bgColor: "bg-green-50 dark:bg-green-950",
+      delay: 0
     },
     {
-      title: "Net Sales",
-      value: formatCurrency(summary.netSales),
-      icon: TrendingUp,
-      color: "text-blue-500",
-      bgColor: "bg-blue-50",
-      growth: previousPeriodSummary ? calculateGrowth(summary.netSales, previousPeriodSummary.netSales) : 0,
-      description: "After discounts & tax"
-    },
-    {
-      title: "Transactions",
-      value: summary.totalTransactions.toString(),
+      title: "Total Transactions",
+      value: formatCompact(summary.total_sales),
+      description: "Number of sales",
       icon: ShoppingCart,
-      color: "text-purple-500",
-      bgColor: "bg-purple-50",
-      growth: previousPeriodSummary ? calculateGrowth(summary.totalTransactions, previousPeriodSummary.totalTransactions) : 0,
-      description: "Total orders"
+      color: "text-purple-600",
+      bgColor: "bg-purple-50 dark:bg-purple-950",
+      delay: 0.1
     },
     {
       title: "Avg Order Value",
-      value: formatCurrency(summary.averageOrderValue),
+      value: formatCurrency(summary.average_sale_value),
+      description: "Average per transaction",
       icon: CreditCard,
-      color: "text-orange-500",
-      bgColor: "bg-orange-50",
-      growth: previousPeriodSummary ? calculateGrowth(summary.averageOrderValue, previousPeriodSummary.averageOrderValue) : 0,
-      description: "Average per transaction"
+      color: "text-blue-600",
+      bgColor: "bg-blue-50 dark:bg-blue-950",
+      delay: 0.2
     },
     {
       title: "Tax Collected",
-      value: formatCurrency(summary.taxCollected),
+      value: formatCurrency(summary.total_tax),
+      description: "Total tax amount",
       icon: Users,
-      color: "text-red-500",
-      bgColor: "bg-red-50",
-      growth: previousPeriodSummary ? calculateGrowth(summary.taxCollected, previousPeriodSummary.taxCollected) : 0,
-      description: "Total tax amount"
+      color: "text-orange-600",
+      bgColor: "bg-orange-50 dark:bg-orange-950",
+      delay: 0.3
     },
     {
       title: "Discount Given",
-      value: formatCurrency(summary.discountGiven),
+      value: formatCurrency(summary.total_discount),
+      description: "Total discounts applied",
       icon: Percent,
-      color: "text-yellow-500",
-      bgColor: "bg-yellow-50",
-      growth: previousPeriodSummary ? calculateGrowth(summary.discountGiven, previousPeriodSummary.discountGiven) : 0,
-      description: "Total discounts"
+      color: "text-red-600",
+      bgColor: "bg-red-50 dark:bg-red-950",
+      delay: 0.4
+    },
+    {
+      title: "Net Sales",
+      value: formatCurrency(summary.total_revenue - summary.total_discount),
+      description: "Revenue after discounts",
+      icon: TrendingUp,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50 dark:bg-emerald-950",
+      delay: 0.5
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      {stats.map((stat) => {
-        const Icon = stat.icon;
-        const isPositive = stat.growth >= 0;
-        
-        return (
-          <Card key={stat.title} className="relative overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {stat.title}
-              </CardTitle>
-              <div className={`p-2 rounded-full ${stat.bgColor}`}>
-                <Icon className={`h-4 w-4 ${stat.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <div className="flex items-center gap-1">
-                <span className={`text-xs ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                  {isPositive ? '↗' : '↘'} {Math.abs(stat.growth).toFixed(1)}%
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {stat.description}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      {stats.map((stat, index) => (
+        <StatsCard key={stat.title} {...stat} delay={index * 0.1} />
+      ))}
     </div>
   );
 }

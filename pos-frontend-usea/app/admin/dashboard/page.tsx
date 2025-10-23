@@ -221,7 +221,7 @@ export default function DashboardPage() {
                   <Button
                     variant="outline"
                     className="h-20 flex flex-col gap-2"
-                    onClick={() => window.location.href = '/products'}
+                    onClick={() => window.location.href = '/admin/products'}
                   >
                     <Package className="h-6 w-6" />
                     Manage Products
@@ -229,7 +229,7 @@ export default function DashboardPage() {
                   <Button
                     variant="outline"
                     className="h-20 flex flex-col gap-2"
-                    onClick={() => window.location.href = '/customers'}
+                    onClick={() => window.location.href = '/admin/customers'}
                   >
                     <Users className="h-6 w-6" />
                     Customers
@@ -237,10 +237,10 @@ export default function DashboardPage() {
                   <Button
                     variant="outline"
                     className="h-20 flex flex-col gap-2"
-                    onClick={() => window.location.href = '/reports'}
+                    onClick={() => window.location.href = '/admin/sales'}
                   >
                     <TrendingUp className="h-6 w-6" />
-                    Reports
+                    Sales
                   </Button>
                 </div>
               </CardContent>

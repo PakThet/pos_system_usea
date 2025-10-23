@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Cashier } from "@/types/cashier";
+import { Cashier } from "@/types/employee";
 import { CashierAvatar } from "./cashier-avatar";
 import { CashierStatusBadge, CashierRoleBadge, CashierShiftBadge } from "./cashier-status-badge";
 import { 
@@ -39,9 +39,13 @@ import {
   Search,
   Filter,
   Clock,
+  Trash2,
+  User,
   DollarSign
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
+import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 
 interface CashiersTableProps {
   cashiers: Cashier[];
@@ -51,41 +55,6 @@ interface CashiersTableProps {
   onStatusChange: (cashierId: string, status: Cashier['status']) => Promise<void>;
   onRecordLogin: (cashierId: string) => Promise<void>;
   isLoading?: boolean;
-}
-
-// Delete Confirmation Dialog
-function DeleteConfirmationDialog({
-  open,
-  onClose,
-  onConfirm,
-  title = "Confirm Delete",
-  description = "Are you sure you want to delete this item?",
-}: {
-  open: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  title?: string;
-  description?: string;
-}) {
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <Card className="w-[400px]">
-        <CardHeader className="flex justify-between items-center">
-          <CardTitle>{title}</CardTitle>
-          <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p>{description}</p>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button variant="destructive" onClick={() => { onConfirm(); onClose(); }}>Delete</Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
 }
 
 export function CashiersTable({
@@ -101,7 +70,6 @@ export function CashiersTable({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [shiftFilter, setShiftFilter] = useState<string>("all");
-
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [cashierToDelete, setCashierToDelete] = useState<Cashier | null>(null);
 
@@ -120,27 +88,54 @@ export function CashiersTable({
   });
 
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+    new Intl.NumberFormat("en-US", { 
+      style: "currency", 
+      currency: "USD",
+      minimumFractionDigits: 0 
+    }).format(amount);
 
   const handleStatusToggle = async (cashier: Cashier, checked: boolean) => {
     await onStatusChange(cashier.id, checked ? "active" : "inactive");
   };
 
+  const rowVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: { 
+      opacity: 1, 
+      x: 0,
+      transition: {
+        duration: 0.4
+      }
+    },
+    exit: {
+      opacity: 0,
+      x: 20,
+      transition: {
+        duration: 0.3
+      }
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <motion.div 
+        className="flex flex-col sm:flex-row gap-4 p-6 bg-gradient-to-r from-muted/20 to-muted/10 rounded-xl border"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search cashiers by name, email, or ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 bg-background/50 backdrop-blur-sm"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-[150px] bg-background/50 backdrop-blur-sm">
             <Filter className="h-4 w-4 mr-2" />
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -152,7 +147,7 @@ export function CashiersTable({
           </SelectContent>
         </Select>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-[150px] bg-background/50 backdrop-blur-sm">
             <Filter className="h-4 w-4 mr-2" />
             <SelectValue placeholder="Role" />
           </SelectTrigger>
@@ -164,7 +159,7 @@ export function CashiersTable({
           </SelectContent>
         </Select>
         <Select value={shiftFilter} onValueChange={setShiftFilter}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-[150px] bg-background/50 backdrop-blur-sm">
             <Filter className="h-4 w-4 mr-2" />
             <SelectValue placeholder="Shift" />
           </SelectTrigger>
@@ -176,113 +171,147 @@ export function CashiersTable({
             <SelectItem value="night">Night</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </motion.div>
 
       {/* Table */}
-      <div className="border rounded-lg">
+      <motion.div 
+        className="border-0 rounded-xl shadow-lg bg-gradient-to-br from-background to-muted/5 overflow-hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-muted/30">
             <TableRow>
-              <TableHead>Cashier</TableHead>
-              <TableHead>Employee ID</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Shift</TableHead>
-              <TableHead className="text-right">Sales</TableHead>
-              <TableHead className="w-[100px]">Active</TableHead>
+              <TableHead className="font-semibold">Cashier</TableHead>
+              <TableHead className="font-semibold">Employee ID</TableHead>
+              <TableHead className="font-semibold">Contact</TableHead>
+              <TableHead className="font-semibold">Status</TableHead>
+              <TableHead className="font-semibold">Role</TableHead>
+              <TableHead className="font-semibold">Shift</TableHead>
+              <TableHead className="font-semibold text-right">Performance</TableHead>
+              <TableHead className="font-semibold text-center">Active</TableHead>
               <TableHead className="w-[80px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredCashiers.map((cashier) => (
-              <TableRow key={cashier.id} className="cursor-pointer hover:bg-muted/50">
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <CashierAvatar cashier={cashier} />
-                    <div>
-                      <div className="font-semibold">{cashier.first_name} {cashier.last_name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        ${cashier.hourly_rate}/hr
+            <AnimatePresence>
+              {filteredCashiers.map((cashier, index) => (
+                <motion.tr
+                  key={cashier.id}
+                  variants={rowVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  custom={index}
+                  className="border-b hover:bg-accent/50 transition-colors group cursor-pointer"
+                  whileHover={{ scale: 1.005, backgroundColor: "rgba(0,0,0,0.02)" }}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-3" onClick={() => onView(cashier)}>
+                      <CashierAvatar cashier={cashier} size="md" />
+                      <div>
+                        <div className="font-semibold group-hover:text-primary transition-colors">
+                          {cashier.first_name} {cashier.last_name}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {formatCurrency(cashier.hourly_rate)}/hr
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </TableCell>
-                <TableCell className="font-mono text-sm">{cashier.employee_id}</TableCell>
-                <TableCell>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-sm">{cashier.email}</span>
+                  </TableCell>
+                  <TableCell className="font-mono text-sm bg-muted/20 rounded-lg px-3 py-2">
+                    {cashier.employee_id}
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-sm">{cashier.email}</span>
+                      </div>
+                      {cashier.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm">{cashier.phone}</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-sm">{cashier.phone}</span>
+                  </TableCell>
+                  <TableCell>
+                    <CashierStatusBadge status={cashier.status} size="sm" />
+                  </TableCell>
+                  <TableCell>
+                    <CashierRoleBadge role={cashier.role} size="sm" />
+                  </TableCell>
+                  <TableCell>
+                    <CashierShiftBadge shift={cashier.shift} size="sm" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="font-bold text-lg text-green-600">
+                      {formatCurrency(cashier.total_sales)}
                     </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <CashierStatusBadge status={cashier.status} size="sm" />
-                </TableCell>
-                <TableCell>
-                  <CashierRoleBadge role={cashier.role} size="sm" />
-                </TableCell>
-                <TableCell>
-                  <CashierShiftBadge shift={cashier.shift} size="sm" />
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="font-semibold">{formatCurrency(cashier.total_sales)}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {cashier.total_transactions} transactions
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Switch
-                    checked={cashier.status === "active"}
-                    onCheckedChange={(checked) => handleStatusToggle(cashier, checked)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => onView(cashier)}>
-                        <Eye className="h-4 w-4 mr-2" /> View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onEdit(cashier)}>
-                        <Edit className="h-4 w-4 mr-2" /> Edit Cashier
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onRecordLogin(cashier.id)}>
-                        <Clock className="h-4 w-4 mr-2" /> Record Login
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setCashierToDelete(cashier);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <DollarSign className="h-4 w-4 mr-2" /> Delete Cashier
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+                    <div className="text-xs text-muted-foreground">
+                      {cashier.total_transactions} trans • {cashier.total_hours}h
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                      <Switch
+                        checked={cashier.status === "active"}
+                        onCheckedChange={(checked) => handleStatusToggle(cashier, checked)}
+                        className="data-[state=checked]:bg-green-500"
+                      />
+                    </motion.div>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => onView(cashier)} className="cursor-pointer">
+                          <Eye className="h-4 w-4 mr-2" /> View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onEdit(cashier)} className="cursor-pointer">
+                          <Edit className="h-4 w-4 mr-2" /> Edit Cashier
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onRecordLogin(cashier.id)} className="cursor-pointer">
+                          <Clock className="h-4 w-4 mr-2" /> Record Login
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setCashierToDelete(cashier);
+                            setDeleteDialogOpen(true);
+                          }}
+                          className="cursor-pointer text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" /> Delete Cashier
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </motion.tr>
+              ))}
+            </AnimatePresence>
           </TableBody>
         </Table>
 
         {filteredCashiers.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-muted-foreground">No cashiers found matching your criteria.</div>
-          </div>
+          <motion.div 
+            className="text-center py-12"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <div className="text-muted-foreground text-lg">No cashiers found matching your criteria.</div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
 
       {/* Delete Dialog */}
       <DeleteConfirmationDialog
@@ -295,7 +324,7 @@ export function CashiersTable({
           }
         }}
         title="Delete Cashier"
-        description={`Are you sure you want to delete cashier ${cashierToDelete?.first_name} ${cashierToDelete?.last_name}?`}
+        description={`Are you sure you want to delete cashier ${cashierToDelete?.first_name} ${cashierToDelete?.last_name}? This action cannot be undone.`}
       />
     </div>
   );

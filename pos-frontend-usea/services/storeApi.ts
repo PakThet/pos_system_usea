@@ -6,4 +6,5 @@ export const storeApi = {
     const response = await api.get('/stores');
     return response.data.data;
   },
+
 };
