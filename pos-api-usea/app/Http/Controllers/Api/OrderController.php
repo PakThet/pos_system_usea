@@ -63,7 +63,14 @@ class OrderController extends Controller
             // Pagination
             $perPage = $request->get('per_page', 15);
             $orders = $query->orderBy('created_at', 'desc')->paginate($perPage);
-
+            $orders->getCollection()->transform(function ($order) {
+    foreach ($order->items as $item) {
+        if ($item->product) {
+            $item->product->image = $item->product->image_url; 
+        }
+    }
+    return $order;
+});
             return response()->json([
                 "success" => true,
                 "message" => "Orders fetched successfully",
@@ -207,7 +214,12 @@ class OrderController extends Controller
                 'shippingAddress',
                 'billingAddress'
             ]);
-
+            
+$order->items->each(function ($item) {
+                if ($item->product) {
+                    $item->product->image = $item->product->image_url;
+                }
+            });
             return response()->json([
                 "success" => true,
                 "message" => "Order fetched successfully",

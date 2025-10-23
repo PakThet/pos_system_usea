@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Dialog,
   DialogContent,
@@ -27,7 +25,10 @@ import {
   FileText,
   DollarSign,
   Percent,
-  TruckIcon
+  TruckIcon,
+  Download,
+  Printer,
+  Share2
 } from "lucide-react";
 
 interface OrderDetailsDialogProps {
@@ -65,21 +66,47 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
     return `${cashier.first_name} ${cashier.last_name}`;
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleExport = () => {
+    // Implement export functionality
+    console.log('Export order:', order);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto p-0">
         <DialogHeader className="px-6 py-4 border-b bg-muted/30">
-          <DialogTitle className="flex items-center gap-3 text-2xl font-bold">
-            <div className="p-2 bg-primary rounded-lg">
-              <Package className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-              <div>Order Details</div>
-              <div className="text-lg font-normal text-muted-foreground">
-                {order.order_number}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <DialogTitle className="flex items-center gap-3 text-2xl font-bold">
+              <div className="p-2 bg-primary rounded-lg">
+                <Package className="h-6 w-6 text-primary-foreground" />
               </div>
+              <div>
+                <div>Order Details</div>
+                <div className="text-lg font-normal text-muted-foreground">
+                  {order.order_number}
+                </div>
+              </div>
+            </DialogTitle>
+            
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <Button variant="outline" size="sm">
+                <Share2 className="h-4 w-4 mr-2" />
+                Share
+              </Button>
             </div>
-          </DialogTitle>
+          </div>
         </DialogHeader>
 
         <div className="p-6 space-y-6">
@@ -153,14 +180,17 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="space-y-4 p-6">
-                    {order.items.map((item, index) => (
+                    {order.items.map((item) => (
                       <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors">
                         <div className="flex items-center gap-4 flex-1">
                           <div className="relative">
                             <img
-                              src={item.product.image}
+                              src={item.product.image || "/placeholder-product.jpg"}
                               alt={item.product_name}
                               className="w-16 h-16 object-cover rounded-lg border"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "/placeholder-product.jpg";
+                              }}
                             />
                             <Badge 
                               variant="secondary" 
@@ -204,7 +234,7 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground flex items-center gap-2">
                         <Percent className="h-4 w-4" />
-                        Tax ({parseFloat(order.tax_amount) / parseFloat(order.subtotal_amount) * 100}%)
+                        Tax
                       </span>
                       <span className="font-medium text-orange-600">{formatCurrency(order.tax_amount)}</span>
                     </div>

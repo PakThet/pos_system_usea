@@ -63,8 +63,8 @@ export default function ProductsPage() {
       // Previous month
       const prev = await productApi.getProducts({
         page: 1,
-        perPage: 1000, // fetch all for prev month
-        month: new Date().getMonth() === 0 ? 12 : new Date().getMonth(), // previous month
+        perPage: 1000,
+        month: new Date().getMonth() === 0 ? 12 : new Date().getMonth(),
         year: new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear(),
       });
 

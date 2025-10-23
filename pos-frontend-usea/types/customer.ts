@@ -18,7 +18,7 @@ export interface Customer {
   tier: 'standard' | 'premium' | 'vip';
   avatar?: string | null;
   total_orders: number;
-  total_spent: number;
+  total_spent: string;
   last_order?: string;
   created_at: string;
   updated_at: string;

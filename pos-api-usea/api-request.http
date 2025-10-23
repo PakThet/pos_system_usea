@@ -10,40 +10,40 @@ Accept: application/json
 Content-Type: application/json
 
 {
-    "email": "jane.smith@store.com",
-    "password": "password123"
+    "email": "admin@gmail.com",
+    "password": "123"
 }
 
 
 ###
 GET http://localhost:8000/api/products
 Accept: application/json
-Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
+Authorization: Bearer 2|rpJpe85ZYB4WmOKn696Vp29MjF8kkFtrQduWkbPU3cbf05a7
 ###
 GET http://localhost:8000/api/sales/stats
 Accept: application/json
-Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
+Authorization: Bearer 2|rpJpe85ZYB4WmOKn696Vp29MjF8kkFtrQduWkbPU3cbf05a7
 ###
 GET http://localhost:8000/api/stores
 Accept: application/json
-Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
+Authorization: Bearer 2|rpJpe85ZYB4WmOKn696Vp29MjF8kkFtrQduWkbPU3cbf05a7
 ###
 GET http://localhost:8000/api/categories
 Accept: application/json
-Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
+Authorization: Bearer 2|rpJpe85ZYB4WmOKn696Vp29MjF8kkFtrQduWkbPU3cbf05a7
 ###
 ###
-GET http://localhost:8000/api/customers/stats
+GET http://localhost:8000/api/products
 Accept: application/json
-Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
+Authorization: Bearer 2|rpJpe85ZYB4WmOKn696Vp29MjF8kkFtrQduWkbPU3cbf05a7
 ###
-GET http://localhost:8000/api/customers
+GET http://localhost:8000/api/orders
 Accept: application/json
-Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
+Authorization: Bearer 2|rpJpe85ZYB4WmOKn696Vp29MjF8kkFtrQduWkbPU3cbf05a7
 ###
 GET http://localhost:8000/api/sales
 Accept: application/json
-Authorization: Bearer 5|zts66s1Smv94odqXuU8JVw2p008ssvht0gqYOR9A3b6bc1d3
+Authorization: Bearer 2|rpJpe85ZYB4WmOKn696Vp29MjF8kkFtrQduWkbPU3cbf05a7
 ###
 GET http://localhost:8000/api/customers/stats
 Accept: application/json

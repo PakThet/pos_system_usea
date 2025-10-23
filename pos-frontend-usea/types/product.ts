@@ -3,7 +3,7 @@ import { Category } from "./category";
 export interface Store {
   id: number;
   name: string;
-  address?: string;
+  location?: string;
   created_at?: string;
   updated_at?: string;
 }

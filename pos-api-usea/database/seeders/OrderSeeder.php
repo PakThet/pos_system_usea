@@ -7,7 +7,6 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Customer;
 use App\Models\User;
-use App\Models\CustomerAddress;
 use Illuminate\Database\Seeder;
 
 class OrderSeeder extends Seeder
