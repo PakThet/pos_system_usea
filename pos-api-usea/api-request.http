@@ -20,7 +20,7 @@ GET http://localhost:8000/api/users
 Accept: application/json
 Authorization: Bearer 2|rpJpe85ZYB4WmOKn696Vp29MjF8kkFtrQduWkbPU3cbf05a7
 ###
-GET http://localhost:8000/api/sales/stats
+GET http://localhost:8000/api/sales
 Accept: application/json
 Authorization: Bearer 2|rpJpe85ZYB4WmOKn696Vp29MjF8kkFtrQduWkbPU3cbf05a7
 ###

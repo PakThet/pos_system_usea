@@ -1,10 +1,6 @@
+// 📄 /services/saleApi.ts
 import { api } from '@/lib/api';
 import {
-  Sale,
-  SalesSummary,
-  SalesTrend,
-  TopProduct,
-  PaymentMethodStats,
   SalesFilter,
 } from '@/types/sale';
 
@@ -34,6 +30,14 @@ export const salesApi = {
     if (filters?.endDate) params.append('end_date', filters.endDate);
 
     const response = await api.get(`/sales/stats?${params}`);
+    return response.data;
+  },
+
+  async getTopProducts(filters?: { period?: string }) {
+    const params = new URLSearchParams();
+    if (filters?.period) params.append('period', filters.period);
+
+    const response = await api.get(`/sales/top-products?${params}`);
     return response.data;
   },
 

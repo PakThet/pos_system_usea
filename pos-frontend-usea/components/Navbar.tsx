@@ -20,7 +20,7 @@ const navItems = [
   { path: "/admin/categories", name: "Categories", icon: Tags },
   { path: "/admin/orders", name: "Orders", icon: ShoppingCart },
   { path: "/admin/pos", name: "Point of Sale", icon: Monitor },
-  { path: "/admin/employees", name: "Employees", icon: DollarSign },
+  { path: "/admin/employees", name: "Employees", icon: Users },
   { path: "/admin/sales", name: "Sales", icon: DollarSign },
 ]
 

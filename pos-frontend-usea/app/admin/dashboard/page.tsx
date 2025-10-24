@@ -212,7 +212,7 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
                   <Button
-                    onClick={() => window.location.href = '/pos'}
+                    onClick={() => window.location.href = '/admin/pos'}
                     className="h-20 flex flex-col gap-2"
                   >
                     <ShoppingCart className="h-6 w-6" />
